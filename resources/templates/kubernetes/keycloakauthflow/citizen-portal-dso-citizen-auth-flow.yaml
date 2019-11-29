@@ -1,0 +1,51 @@
+apiVersion: v1.edp.epam.com/v1alpha1
+kind: KeycloakAuthFlow
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+    meta.helm.sh/release-name: registry-configuration
+    meta.helm.sh/release-namespace: ${namespace}
+  name: citizen-portal-dso-citizen-auth-flow
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  alias: dso-citizen-auth-flow
+  authenticationExecutions:
+    - authenticator: auth-cookie
+      authenticatorConfig: null
+      authenticatorFlow: false
+      priority: 0
+      requirement: ALTERNATIVE
+    - authenticator: ds-citizen-authenticator
+      authenticatorConfig:
+        alias: ds-citizen-authenticator-configuration
+        config:
+          trembitaUserId: ${trembitaUserId}
+          registryMemberClass: ${registryMemberClass}
+          clientXRoadInstance: ${clientXRoadInstance}
+          citizenDefaultRoles: citizen;unregistered-individual;
+          registryMemberCode: '${registryMemberCode}'
+          trembitaProtocolVersion: '${trembitaProtocolVersion}'
+          esignHintUrl: https://diia.gov.ua/faq/1
+          widgetUrl: '${widgetUrl}'
+          dsoUrl: '${dsoUrl}'
+          registryXRoadInstance: ${registryXRoadInstance}
+          clientSubsystemCode: '${clientSubsystemCode}'
+          clientMemberCode: '${clientMemberCode}'
+          themeFile: white-theme.js
+          clientMemberClass: ${clientMemberClass}
+          entrepreneurDefaultRoles: citizen;unregistered-entrepreneur;
+          trembitaUrl: ${trembitaUrl}
+          legalDefaultRoles: citizen;unregistered-legal;
+          registryToken: ${registryToken}
+          startPageUrl: https://citizen-portal-${cdname}.${dnsWildcard}/login
+          registrySubsystemCode: '${registrySubsystemCode}'
+      authenticatorFlow: false
+      priority: 1
+      requirement: ALTERNATIVE
+  builtIn: false
+  description: ''
+  providerId: basic-flow
+  realm: citizen-portal
+  topLevel: true

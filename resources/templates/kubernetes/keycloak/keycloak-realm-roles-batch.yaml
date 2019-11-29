@@ -1,0 +1,7 @@
+apiVersion: v1.edp.epam.com/v1alpha1
+kind: KeycloakRealmRoleBatch
+metadata:
+  name: ${realmName}
+spec:
+  realm: ${realmName}-portal
+  ${roles}
