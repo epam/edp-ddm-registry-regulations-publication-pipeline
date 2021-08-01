@@ -1,0 +1,30 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: Codebase
+metadata:
+  name: repo-model
+  labels:
+    app: model
+spec:
+  commitMessagePattern: null
+  jenkinsSlave: "dataplatform-jenkins-agent"
+  gitUrlPath: null
+  defaultBranch: 'master'
+  buildTool: maven
+  route: null
+  versioning:
+    startFrom: 0.0.1
+    type: edp
+  jobProvisioning: data-pipelines
+  repository:
+    url: "https://gerrit-mdtu-ddm-edp-cicd.apps.cicd2.mdtu-ddm.projects.epam.com/datamock"
+  lang: groovy-pipeline
+  deploymentScript: 'helm-chart'
+  strategy: clone
+  gitServer: gerrit
+  testReportFramework: null
+  ticketNamePattern: null
+  type: library
+  database: null
+  description: null
+  framework: 'spring'
+  ciTool: Jenkins
