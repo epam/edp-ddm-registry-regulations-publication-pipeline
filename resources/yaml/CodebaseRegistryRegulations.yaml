@@ -14,7 +14,7 @@ spec:
     type: edp
   jobProvisioning: 'registry-regulations'
   repository:
-    url: https://gerrit-mdtu-ddm-edp-cicd.apps.cicd2.mdtu-ddm.projects.epam.com/empty-template-registry-regulation
+    url: https://gerrit-mdtu-ddm-edp-cicd.apps.cicd2.mdtu-ddm.projects.epam.com/mdtu-ddm/registry-regulations/empty-template-registry-regulation
   lang: groovy-pipeline
   deploymentScript: ''
   strategy: clone
