@@ -5,6 +5,7 @@ metadata:
   labels:
     app: kafka-api
 spec:
+  emptyProject: false
   commitMessagePattern: null
   jenkinsSlave: "dataplatform-jenkins-agent"
   gitUrlPath: null

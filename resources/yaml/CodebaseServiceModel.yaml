@@ -5,6 +5,7 @@ metadata:
   labels:
     app: model
 spec:
+  emptyProject: false
   commitMessagePattern: null
   jenkinsSlave: "dataplatform-jenkins-agent"
   gitUrlPath: null

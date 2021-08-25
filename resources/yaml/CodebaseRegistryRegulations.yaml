@@ -3,6 +3,7 @@ kind: Codebase
 metadata:
   name: 'registry-regulations'
 spec:
+  emptyProject: false
   commitMessagePattern: null
   jenkinsSlave: dataplatform-jenkins-agent
   gitUrlPath: null
