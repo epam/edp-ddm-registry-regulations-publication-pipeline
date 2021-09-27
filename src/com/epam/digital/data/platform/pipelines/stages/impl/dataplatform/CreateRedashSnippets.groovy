@@ -18,7 +18,7 @@ class CreateRedashSnippets {
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200"
-        if (response == "[]") {
+        if (response.content == "[]") {
             try {
                 context.logger.info("Publishing redash snippets")
                 context.script.sh(script: "java -jar " +
