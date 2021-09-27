@@ -108,6 +108,7 @@ class PlatformTests extends BasePipelineTest {
         platform.deleteObject(MOCK_ARG, MOCK_ARG)
         platform.deleteObject(MOCK_ARG, MOCK_ARG, true)
         platform.scale(MOCK_ARG, 1)
+        platform.waitFor(MOCK_ARG, MOCK_ARG, MOCK_ARG)
 
         /* String methods */
         assertEquals(MOCK_RESULT, platform.get(MOCK_ARG, MOCK_ARG))

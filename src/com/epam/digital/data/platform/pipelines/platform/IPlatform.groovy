@@ -30,4 +30,6 @@ interface IPlatform {
     String getAll(String resource, String parameters)
 
     void addSccToUser(String user, String scc, String project)
+
+    void waitFor(String resource, String condition, String timeout)
 }

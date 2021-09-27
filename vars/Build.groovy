@@ -2,7 +2,11 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.platform.PlatformFactory
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
+import com.epam.digital.data.platform.pipelines.registrycomponents.external.Keycloak
+import com.epam.digital.data.platform.pipelines.registrycomponents.external.KeycloakClient
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Citus
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Redash
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
 import com.epam.digital.data.platform.pipelines.tools.GitClient
 import com.epam.digital.data.platform.pipelines.tools.Logger
@@ -45,6 +49,22 @@ void call() {
             context.logger.debug("Gitserver config: ${context.gitServer.toString()}")
 
             context.gitClient = new GitClient(context)
+
+            context.logger.info("Initializing citus")
+            context.citus = new Citus(context)
+            context.citus.init()
+            context.logger.debug("Citus: ${context.citus.toString()}")
+
+            context.logger.info("Initializing redash")
+            context.redash = new Redash(context)
+            context.redash.init()
+
+            context.logger.info("Initializing keycloak")
+            context.keycloak = new Keycloak(context)
+            context.keycloak.init()
+            context.logger.debug("Initialized Keycloak: ${context.keycloak.toString()}")
+            context.jenkinsDeployer = new KeycloakClient(context)
+            context.jenkinsDeployer.init("admin", "jenkins-deployer", "jenkins-keycloak-client")
         }
     }
 

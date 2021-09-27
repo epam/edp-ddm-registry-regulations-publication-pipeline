@@ -6,6 +6,7 @@ import com.epam.digital.data.platform.pipelines.registry.Registry
 import com.epam.digital.data.platform.pipelines.registry.RegistryRegulations
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.Keycloak
+import com.epam.digital.data.platform.pipelines.registrycomponents.external.KeycloakClient
 import com.epam.digital.data.platform.pipelines.registrycomponents.generated.DataComponent
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Citus
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.GitServer
@@ -37,6 +38,8 @@ class BuildContext {
     public DockerRegistry dockerRegistry
     public GitServer gitServer
     public GitClient gitClient
+    public KeycloakClient jenkinsDeployer
+    public KeycloakClient historyExcerptor
 
     private File workDir
 

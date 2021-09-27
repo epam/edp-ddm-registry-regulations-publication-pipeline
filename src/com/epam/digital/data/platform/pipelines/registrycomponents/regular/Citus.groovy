@@ -65,7 +65,7 @@ class Citus {
 
     void psqlCommand(String pod, String command, String database = "") {
         try {
-            context.platform.podExec(pod, "psql ${database} -U ${user} -c \"${command}\"")
+            context.platform.podExec(pod, "psql ${database} -U ${user} -t -c \"${command}\"")
         } catch (any) {
             context.logger.warn("Failed to execute command ${command} on ${pod}")
         }

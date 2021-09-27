@@ -15,7 +15,7 @@ class UploadBusinessProcessChanges {
                 RegulationType.BUSINESS_PROCESS) + context.registryRegulations.filesToDeploy.get(
                 RegulationType.BUSINESS_RULE)
         if (changedBPFiles) {
-            String token = context.keycloak.getDeployerAccessToken()
+            String token = context.keycloak.getAccessToken(context.jenkinsDeployer)
             changedBPFiles.each {
                 deploy(it, token)
             }

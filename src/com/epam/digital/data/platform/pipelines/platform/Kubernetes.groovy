@@ -18,6 +18,11 @@ class Kubernetes implements IPlatform {
     }
 
     @Override
+    void waitFor(String resource, String condition, String timeout) {
+        context.script.sh(script: "${CLI} wait --for=${condition} ${resource} --timeout=${timeout}")
+    }
+
+    @Override
     String getSecretValue(String secretName, String secretKey) {
         return new String(getJsonPathValue("secret", secretName, ".data.${secretKey}").decodeBase64())
     }

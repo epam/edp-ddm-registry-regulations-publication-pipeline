@@ -28,7 +28,8 @@ class CreatePermissionsBusinessProcess {
 
                 String tokenFile = "token.txt"
                 if (!filesList.isEmpty()) {
-                    context.script.writeFile(file: tokenFile, text: context.keycloak.getDeployerAccessToken())
+                    context.script.writeFile(file: tokenFile,
+                            text: context.keycloak.getAccessToken(context.jenkinsDeployer))
                     context.script.sh(script: "java -jar ${CAMUNDA_AUTH_CLI} " +
                             "--BPMS_URL=${BusinessProcMgmtSys.URL} " +
                             "--BPMS_TOKEN=${tokenFile} " +
