@@ -1,8 +1,8 @@
 package com.epam.digital.data.platform.pipelines.codebase
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.buildtool.IBuildTool
 import com.epam.digital.data.platform.pipelines.buildtool.BuildToolFactory
+import com.epam.digital.data.platform.pipelines.buildtool.IBuildTool
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 
 class Codebase {
@@ -28,7 +28,7 @@ class Codebase {
     public IBuildTool buildTool
     public String sourceRepository
 
-    Codebase (BuildContext context) {
+    Codebase(BuildContext context) {
         this.context = context
     }
 

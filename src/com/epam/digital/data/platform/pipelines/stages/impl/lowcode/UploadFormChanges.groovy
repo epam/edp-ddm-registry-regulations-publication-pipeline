@@ -10,7 +10,7 @@ import groovy.json.JsonSlurper
 @Stage(name = "upload-form-changes", buildTool = ["any"], type = ProjectType.LIBRARY)
 class UploadFormChanges {
     BuildContext context
-    
+
     void run() {
         ArrayList<String> changedFormFiles = context.registryRegulations.filesToDeploy.get(RegulationType.UI_FORM)
         if (changedFormFiles) {

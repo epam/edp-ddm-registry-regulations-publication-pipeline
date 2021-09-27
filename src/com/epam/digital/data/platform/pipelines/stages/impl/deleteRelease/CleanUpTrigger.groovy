@@ -38,7 +38,7 @@ class CleanUpTrigger {
                     context.codebase.sourceRepository.substring(
                             context.codebase.sourceRepository.lastIndexOf('/') + 1),
                     "empty-template-registry-regulation")
-            String repoUrl =  context.getParameterValue("RECREATE_EMPTY", "true").toBoolean()
+            String repoUrl = context.getParameterValue("RECREATE_EMPTY", "true").toBoolean()
                     ? emptyRepoUrl : context.codebase.sourceRepository
             Map binding = [
                     "repoUrl"       : repoUrl,

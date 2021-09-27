@@ -1,6 +1,7 @@
 package com.epam.digital.data.platform.pipelines.buildcontext
 
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
+import com.epam.digital.data.platform.pipelines.platform.IPlatform
 import com.epam.digital.data.platform.pipelines.registry.Registry
 import com.epam.digital.data.platform.pipelines.registry.RegistryRegulations
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
@@ -12,7 +13,6 @@ import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Redas
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
 import com.epam.digital.data.platform.pipelines.tools.GitClient
 import com.epam.digital.data.platform.pipelines.tools.Logger
-import com.epam.digital.data.platform.pipelines.platform.IPlatform
 import org.apache.commons.lang.RandomStringUtils
 
 class BuildContext {

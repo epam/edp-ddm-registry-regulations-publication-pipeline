@@ -26,8 +26,8 @@ class UploadGlobalVarsChanges {
                 String asJson = context.script.sh(script: """x=2; awk '{printf "%"'\$x'"s%s%s\\n", "", \$0, ","}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true)
                         .replaceAll("\n", "\\\\n")
-                        .replaceAll(': ',': \'')
-                        .replaceAll(',','\',')
+                        .replaceAll(': ', ': \'')
+                        .replaceAll(',', '\',')
                 String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson};"
                 applyChanges("registry-environment-js", "registry-environment.js", jsRegistryEnvVarsJson,
                         "citizen-portal,officer-portal")

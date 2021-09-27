@@ -70,7 +70,7 @@ class Redash {
         context.logger.info("Regenerate redash api key")
         def response = context.script.httpRequest url: "${url}/api/users/1/regenerate_api_key",
                 httpMode: "POST",
-                customHeaders: [[name:"Cookie", value: cookie, maskValue: true]],
+                customHeaders: [[name: "Cookie", value: cookie, maskValue: true]],
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200"

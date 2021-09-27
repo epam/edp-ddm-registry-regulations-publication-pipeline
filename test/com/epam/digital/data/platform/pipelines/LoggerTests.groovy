@@ -1,13 +1,13 @@
 package com.epam.digital.data.platform.pipelines
 
+import com.epam.digital.data.platform.pipelines.tools.Logger
+import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
-import com.epam.digital.data.platform.pipelines.tools.Logger
-import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import static org.junit.Assert.*
+import static org.junit.Assert.assertEquals
 
 final class LoggerTests extends BasePipelineTest {
     Script script
@@ -15,7 +15,8 @@ final class LoggerTests extends BasePipelineTest {
 
     private final String MESSAGE = "Hello, edp!"
 
-    @Rule public ExpectedException exceptionRule = ExpectedException.none()
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none()
 
     @Override
     @Before

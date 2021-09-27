@@ -11,11 +11,11 @@ class GitClient {
 
     void checkout(String url, String branch, String credentialsId) {
         context.script.checkout([$class                           : 'GitSCM',
-                         branches                         : [[name: branch]],
-                         doGenerateSubmoduleConfigurations: false, extensions: [],
-                         submoduleCfg                     : [],
-                         userRemoteConfigs                : [[credentialsId: credentialsId,
-                                                              url          : url]]])
+                                 branches                         : [[name: branch]],
+                                 doGenerateSubmoduleConfigurations: false, extensions: [],
+                                 submoduleCfg                     : [],
+                                 userRemoteConfigs                : [[credentialsId: credentialsId,
+                                                                      url          : url]]])
     }
 
     void gitSetConfig() {

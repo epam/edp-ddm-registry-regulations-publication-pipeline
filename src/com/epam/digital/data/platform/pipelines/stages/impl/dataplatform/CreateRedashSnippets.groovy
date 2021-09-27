@@ -14,7 +14,7 @@ class CreateRedashSnippets {
         def response = context.script.httpRequest url: "${context.redash.adminUrl}/api/query_snippets",
                 httpMode: "GET",
                 contentType: "APPLICATION_JSON",
-                customHeaders: [[name:"Authorization", value: context.redash.adminApiKey, maskValue: true]],
+                customHeaders: [[name: "Authorization", value: context.redash.adminApiKey, maskValue: true]],
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200"

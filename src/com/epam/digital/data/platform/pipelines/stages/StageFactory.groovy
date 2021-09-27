@@ -43,8 +43,7 @@ class StageFactory {
                 getStageClass(stageName.toLowerCase(),
                         context.codebase.buildToolSpec,
                         context.codebase.type).run()
-            }
-            else {
+            } else {
                 getStageClass(stageName.toLowerCase()).run()
             }
         }

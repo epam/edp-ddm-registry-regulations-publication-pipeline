@@ -7,6 +7,7 @@ import org.assertj.core.util.Files
 import org.junit.Before
 import org.junit.Test
 import org.yaml.snakeyaml.Yaml
+
 import java.nio.charset.Charset
 
 import static org.junit.Assert.assertEquals

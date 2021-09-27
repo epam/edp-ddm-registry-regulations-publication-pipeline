@@ -1,15 +1,12 @@
 package com.epam.digital.data.platform.pipelines
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.buildtool.Any
-import com.epam.digital.data.platform.pipelines.buildtool.BuildToolFactory
-import com.epam.digital.data.platform.pipelines.buildtool.BuildToolType
-import com.epam.digital.data.platform.pipelines.buildtool.Docker
-import com.epam.digital.data.platform.pipelines.buildtool.IBuildTool
+import com.epam.digital.data.platform.pipelines.buildtool.*
 import com.epam.digital.data.platform.pipelines.tools.Logger
 import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
 import org.junit.Test
+
 import static org.junit.Assert.assertEquals
 
 class BuildToolTests extends BasePipelineTest {

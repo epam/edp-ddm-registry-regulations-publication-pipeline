@@ -5,6 +5,7 @@ import com.epam.digital.data.platform.pipelines.tools.Logger
 import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
 import org.junit.Test
+
 import static org.junit.Assert.assertEquals
 
 class BuildContextTests extends BasePipelineTest {

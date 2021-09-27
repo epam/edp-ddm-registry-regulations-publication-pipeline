@@ -73,11 +73,11 @@ class CreateSchema {
         context.logger.info("Grants after registry deployment")
         context.citus.psqlScript(context.citus.masterPod, DB_GRANTS_MASTER_SQL,
                 "-v dbName=\"'${context.registry.name}'\" " +
-                "-v appRoleName=\"'${context.citus.appRole}'\" " +
-                "-v admRoleName=\"'${context.citus.adminRole}'\"")
+                        "-v appRoleName=\"'${context.citus.appRole}'\" " +
+                        "-v admRoleName=\"'${context.citus.adminRole}'\"")
         context.citus.psqlScript(context.citus.masterRepPod, DB_GRANTS_REPLICA_SQL,
                 "-v dbName=\"'${context.registry.name}'\" " +
-                "-v appRoleName=\"'${context.citus.appRole}'\"")
+                        "-v appRoleName=\"'${context.citus.appRole}'\"")
     }
 
     private void runLiquibase(LinkedHashMap params) {

@@ -22,29 +22,29 @@ class DeployProjects {
         LinkedHashMap parallelDeployment = [:]
         context.dataComponents.values().each { dataComponent ->
             if (dataComponent.name != DataComponentType.MODEL.getValue())
-            parallelDeployment["${dataComponent.name}"] = {
-                context.logger.info("Deploying ${dataComponent.name}")
-                LinkedHashMap<String, String> parametersMap = [
-                        'namespace': context.namespace,
-                        'ciProject': context.namespace,
-                        'dnsWildcard': context.dnsWildcard,
-                        'image.name': "${context.dockerRegistry.host}/${context.namespace}/" +
-                                "${dataComponent.codebaseName}-${dataComponent.codebaseBranch}",
-                        'image.version': context.registry.version,
-                        'version': context.registry.version,
-                        'keycloak.url': context.keycloak.url,
-                        'ceph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT,
-                        'datafactoryResponseCeph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT,
-                        'datafactoryceph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT,
-                        'datafactoryFileCeph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT,
-                        'lowcodeFileCeph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT
-                ]
+                parallelDeployment["${dataComponent.name}"] = {
+                    context.logger.info("Deploying ${dataComponent.name}")
+                    LinkedHashMap<String, String> parametersMap = [
+                            'namespace'                           : context.namespace,
+                            'ciProject'                           : context.namespace,
+                            'dnsWildcard'                         : context.dnsWildcard,
+                            'image.name'                          : "${context.dockerRegistry.host}/${context.namespace}/" +
+                                    "${dataComponent.codebaseName}-${dataComponent.codebaseBranch}",
+                            'image.version'                       : context.registry.version,
+                            'version'                             : context.registry.version,
+                            'keycloak.url'                        : context.keycloak.url,
+                            'ceph.httpEndpoint'                   : Ceph.CEPH_INTERNAL_ENDPOINT,
+                            'datafactoryResponseCeph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT,
+                            'datafactoryceph.httpEndpoint'        : Ceph.CEPH_INTERNAL_ENDPOINT,
+                            'datafactoryFileCeph.httpEndpoint'    : Ceph.CEPH_INTERNAL_ENDPOINT,
+                            'lowcodeFileCeph.httpEndpoint'        : Ceph.CEPH_INTERNAL_ENDPOINT
+                    ]
 
-                context.script.dir(dataComponent.getWorkDir()) {
-                    Helm.upgrade(context, dataComponent.codebaseName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
-                            context.namespace)
+                    context.script.dir(dataComponent.getWorkDir()) {
+                        Helm.upgrade(context, dataComponent.codebaseName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
+                                context.namespace)
+                    }
                 }
-            }
         }
         context.script.parallel parallelDeployment
     }

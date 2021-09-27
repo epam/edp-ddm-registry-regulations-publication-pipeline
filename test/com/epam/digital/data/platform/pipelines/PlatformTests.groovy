@@ -1,11 +1,7 @@
 package com.epam.digital.data.platform.pipelines
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.platform.IPlatform
-import com.epam.digital.data.platform.pipelines.platform.Kubernetes
-import com.epam.digital.data.platform.pipelines.platform.Openshift
-import com.epam.digital.data.platform.pipelines.platform.PlatformFactory
-import com.epam.digital.data.platform.pipelines.platform.PlatformType
+import com.epam.digital.data.platform.pipelines.platform.*
 import com.epam.digital.data.platform.pipelines.tools.Logger
 import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before

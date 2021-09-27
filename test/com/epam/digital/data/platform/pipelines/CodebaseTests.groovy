@@ -20,7 +20,7 @@ class CodebaseTests extends BasePipelineTest {
     void setUp() {
         super.setUp()
         script = loadScript("vars/Build.groovy")
-        helper.registerAllowedMethod("sh", [Map.class], {cmd->
+        helper.registerAllowedMethod("sh", [Map.class], { cmd ->
             if (cmd.get("script").contains(".spec.type"))
                 return "application"
 

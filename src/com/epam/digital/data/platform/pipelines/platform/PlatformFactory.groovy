@@ -5,7 +5,7 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 class PlatformFactory {
     private final BuildContext context
 
-    PlatformFactory (BuildContext context) {
+    PlatformFactory(BuildContext context) {
         this.context = context
     }
 
