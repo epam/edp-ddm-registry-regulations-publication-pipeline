@@ -1,0 +1,11 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: CodebaseBranch
+metadata:
+  name: ${codebaseName}-${branch}
+  labels:
+    type: data-component
+    version: ${version}
+spec:
+  branchName: ${branch}
+  codebaseName: ${codebaseName}
+  version: ${version}

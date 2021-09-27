@@ -1,0 +1,9 @@
+settings:
+  general:
+    package: ua.gov.mdtu.ddm.dataplatform.template
+    register: registry
+    version: 1.0.0
+  kafka:
+    retention-policy-in-days:
+      read: 1
+      write: 1095

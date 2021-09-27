@@ -1,0 +1,8 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: CodebaseBranch
+metadata:
+  name: registry-regulations-${branch}
+spec:
+  branchName: ${branch}
+  codebaseName: registry-regulations
+  version: ${version}

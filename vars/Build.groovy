@@ -1,109 +1,63 @@
-/* Copyright 2018 EPAM Systems.
+import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.codebase.Codebase
+import com.epam.digital.data.platform.pipelines.platform.PlatformFactory
+import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
+import com.epam.digital.data.platform.pipelines.stages.StageFactory
+import com.epam.digital.data.platform.pipelines.tools.GitClient
+import com.epam.digital.data.platform.pipelines.tools.Logger
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
- http://www.apache.org/licenses/LICENSE-2.0
+void call() {
+    BuildContext context
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-
- See the License for the specific language governing permissions and
- limitations under the License.*/
-
-import com.epam.edp.Codebase
-import com.epam.edp.Job
-import com.epam.edp.JobType
-import com.epam.edp.GitInfo
-import com.epam.edp.Nexus
-import com.epam.edp.Keycloak
-import com.epam.edp.platform.PlatformType
-import com.epam.edp.platform.PlatformFactory
-import com.epam.edp.buildtool.BuildToolFactory
-import com.epam.edp.stages.StageFactory
-import org.apache.commons.lang.RandomStringUtils
-
-def call() {
-    def context = [:]
     node("master") {
         stage("Init") {
-            context.platform = new PlatformFactory().getPlatformImpl(this)
+            context = new BuildContext(this)
 
-            context.job = new Job(JobType.BUILD.value, context.platform, this)
-            context.job.init()
-            println("[JENKINS][DEBUG] Created object job with type - ${context.job.type}")
+            String logLevel = context.getLogLevel()
+            context.logger = new Logger(context.script)
+            context.logger.init(logLevel)
+            context.logger.info("Sucessfully inialized logger with level ${logLevel}")
 
-            context.git = new GitInfo(context.job, context.platform, this)
-            context.git.init()
+            context.namespace = context.getParameterValue("CI_NAMESPACE")
+            context.logger.debug("Current namespace: ${context.namespace}")
 
-            context.nexus = new Nexus(context.job, context.platform, this)
-            context.nexus.init()
+            context.platform = new PlatformFactory(context).getPlatformImpl()
+            context.logger.debug("Current platform: ${context.platform.class.name}")
 
-            context.keycloak = new Keycloak(context.job, context.platform, this)
-            context.keycloak.init()
+            context.logger.info("Initializing docker registry")
+            context.dockerRegistry = new DockerRegistry(context)
+            context.dockerRegistry.init()
+            context.logger.debug(context.dockerRegistry.toString())
 
-            context.codebase = new Codebase(context.job, context.git.project, context.platform, this)
-            context.codebase.setConfig(context.git.autouser, context.git.host, context.git.sshPort, context.git.project,
-            context.git.repositoryRelativePath)
+            context.codebase = new Codebase(context)
+            context.codebase.init()
+            context.logger.debug("Codebase config: ${context.codebase.toString()}")
 
-            context.factory = new StageFactory(script: this)
-            context.factory.loadEdpStages().each() { context.factory.add(it) }
-            context.factory.loadCustomStagesFromLib().each() { context.factory.add(it) }
-            context.factory.loadCustomStages("${WORKSPACE.replaceAll("@.*", "")}@script/stages").each() { context.factory.add(it) }
+            context.stageFactory = new StageFactory(context)
+            context.stageFactory.init()
 
-            context.job.printDebugInfo(context)
-            println("[JENKINS][DEBUG] Codebase config - ${context.codebase.config}")
+            context.dnsWildcard = context.platform.getJsonPathValue("jenkins", "jenkins", ".spec.edpSpec.dnsWildcard")
+            context.logger.debug("Current dns wildcard: ${context.dnsWildcard}")
 
-                       if (context.codebase.config.versioningType == "edp") {
-                           def codebaseBranch = getCodebaseBranch(context.codebase.config.codebase_branch, context.git.branch)
-                           def build = codebaseBranch.build_number.toInteger()
-                           def version = codebaseBranch.version
-                           def currentBuildNumber = ++build
-                           def isReleaseBranch = codebaseBranch.release
+            context.gitServer = new Gerrit(context, "gerrit")
+            context.gitServer.init()
+            context.logger.debug("Gitserver config: ${context.gitServer.toString()}")
 
-                           context.codebase.setVersions(version, currentBuildNumber, "${version}.${currentBuildNumber}", "${version}.${currentBuildNumber}", isReleaseBranch)
-                           context.job.setDisplayName("${context.codebase.version}")
-                      } else {
-                           context.job.setDisplayName("${currentBuild.number}-${context.git.displayBranch}")
-                       }
+            context.gitClient = new GitClient(context)
+        }
+    }
 
-            context.job.setDescription("Name: ${context.codebase.config.name}\r\nLanguage: ${context.codebase.config.language}" +
-            "\r\nBuild tool: ${context.codebase.config.build_tool}\r\nFramework: ${context.codebase.config.framework}")
-            }
-            }
+    node(context.codebase.jenkinsAgent) {
+        context.initWorkDir()
+        context.codebase.initBuildTool()
 
-            node(context.codebase.config.jenkinsSlave) {
-                try {
-                    context.workDir = new File("/tmp/${RandomStringUtils.random(10, true, true)}")
-                    context.workDir.deleteDir()
-
-          context.buildTool = new BuildToolFactory().getBuildToolImpl(context.codebase.config.build_tool, this, context.nexus, context.job)
-          context.buildTool.init()
-
-                    context.job.stages.each() { stage ->
-                        if (stage instanceof ArrayList) {
-                            def parallelStages = [:]
-                            stage.each() { parallelStage ->
-                                parallelStages["${parallelStage.name}"] = {
-                                    context.job.runStage(parallelStage.name, context)
-                                }
-                            }
-                            parallel parallelStages
-                        } else {
-                            context.job.runStage(stage.name, context)
-                        }
-                    }
-                } catch (Exception ex) {
-                    println("[JENKINS][ERROR] Build pipeline has been failed. Reason - ${ex}")
-                    currentBuild.setResult('FAILED')
+        context.stageFactory.getStagesToRun().each { stage ->
+            dir(context.getWorkDir()) {
+                dir(context.workDir) {
+                    context.stageFactory.runStage(stage.name, context)
                 }
             }
         }
-
-        @NonCPS
-        def private getCodebaseBranch(codebaseBranch, gitBranchName) {
-            return codebaseBranch.stream().filter({
-                it.branchName == gitBranchName
-            }).findFirst().get()
-        }
+    }
+}
