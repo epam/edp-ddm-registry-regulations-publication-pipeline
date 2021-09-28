@@ -28,7 +28,7 @@ class UploadGlobalVarsChanges {
                         .replaceAll("\n", "\\\\n")
                         .replaceAll(': ', ': \'')
                         .replaceAll(',', '\',')
-                String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson};"
+                String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson}};"
                 applyChanges("registry-environment-js", "registry-environment.js", jsRegistryEnvVarsJson,
                         "citizen-portal,officer-portal")
                 context.logger.info("Registry env variables have been successfully updated")
