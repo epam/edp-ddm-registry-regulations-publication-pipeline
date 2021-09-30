@@ -48,8 +48,8 @@ class Kubernetes implements IPlatform {
         * Kubernetes 1.15 so we just patch date annotation to trigger new rollout */
 
         deploymentName.split(',').each {
-            context.script.sh(script: "${CLI} patch deployment ${it} -p \"{\\\"spec\\\":{\\\"template\\\":" +
-                    "{\\\"metadata\\\":{\\\"annotations\\\":{\\\"date\\\":\\\"`date +'%s'`\\\"}}}}}\"")
+            patch("deployment", it, "\'{\"spec\":{\"template\":" +
+                    "{\"metadata\":{\"annotations\":{\"reload_by\":\"${context.script.env.BUILD_TAG}\"}}}}}\'")
             context.script.sleep(5)
             context.script.sh(script: "${CLI} rollout status deployment ${it}")
         }
