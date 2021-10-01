@@ -14,20 +14,22 @@ class UploadFormChanges {
     void run() {
         ArrayList<String> changedFormFiles = context.registryRegulations.filesToDeploy.get(RegulationType.UI_FORM)
         if (changedFormFiles) {
+            String token = context.keycloak.getAccessToken(context.jenkinsDeployer)
             changedFormFiles.each {
-                deployForm(it)
+                deployForm(it, token)
             }
         } else {
             context.logger.info("Skip ${RegulationType.UI_FORM.value} files deploy due to empty change list")
         }
     }
 
-    private boolean isFormExists(String formName) {
+    private boolean isFormExists(String formName, String token) {
         def response
         try {
             context.logger.debug("Check if form ${formName} already exists using form name")
             response = context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/${formName}",
                     httpMode: 'GET',
+                    customHeaders: [[maskValue: true, name: 'X-Access-Token', value: token]],
                     consoleLogResponseBody: context.logLevel == "DEBUG",
                     quiet: context.logLevel != "DEBUG",
                     validResponseCodes: "200,400"
@@ -43,13 +45,14 @@ class UploadFormChanges {
         }
     }
 
-    private void createForm(String formFile, String content) {
+    private void createForm(String formFile, String content, String token) {
         try {
             context.logger.info("Creating form ${formFile}")
             context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/form",
                     httpMode: 'POST',
                     requestBody: content,
-                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"]],
+                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"], 
+                                    [maskValue: true, name: 'X-Access-Token', value: token]],
                     wrapAsMultipart: false,
                     consoleLogResponseBody: context.logLevel == "DEBUG",
                     quiet: context.logLevel != "DEBUG",
@@ -60,13 +63,14 @@ class UploadFormChanges {
         }
     }
 
-    private void updateForm(String formFile, String formName, String content) {
+    private void updateForm(String formFile, String formName, String content, String token) {
         try {
             context.logger.info("Updating form ${formFile}")
             context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/${formName}",
                     httpMode: 'PUT',
                     requestBody: content,
-                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"]],
+                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"], 
+                                    [maskValue: true, name: 'X-Access-Token', value: token]],
                     wrapAsMultipart: false,
                     consoleLogResponseBody: context.logLevel == "DEBUG",
                     quiet: context.logLevel != "DEBUG",
@@ -77,13 +81,13 @@ class UploadFormChanges {
         }
     }
 
-    void deployForm(String formFile) {
+    void deployForm(String formFile, String token) {
         String formJsonContent = context.script.readFile(file: formFile, encoding: "UTF-8")
         String formName = new JsonSlurper().parseText(formJsonContent).name
-        if (isFormExists(formName)) {
-            updateForm(formFile, formName, formJsonContent)
+        if (isFormExists(formName, token)) {
+            updateForm(formFile, formName, formJsonContent, token)
         } else {
-            createForm(formFile, formJsonContent)
+            createForm(formFile, formJsonContent, token)
         }
     }
 }
