@@ -15,9 +15,6 @@ class CreateSchema {
     private final String LIQUIBASE_MAIN_SCRIPT = "data-model/main-liquibase.xml"
     private final String LIQUIBASE_POST_DEPLOY_SCRIPT = "../../liquibase-repositories/changelog-master-post-deploy.xml"
 
-    private final String DB_GRANTS_MASTER_SQL = "/etc/registry_db__grants_after_deploy_on_master.sql"
-    private final String DB_GRANTS_REPLICA_SQL = "/etc/registry_db__grants_after_deploy_on_replica.sql"
-
     void run() {
         try {
             context.script.sh(script: "oc rsync data-model/data-load ${context.citus.masterPod}:/tmp")
@@ -70,14 +67,6 @@ class CreateSchema {
                 contexts: "all,sub",
                 dbName: context.registry.name)
 
-        context.logger.info("Grants after registry deployment")
-        context.citus.psqlScript(context.citus.masterPod, DB_GRANTS_MASTER_SQL,
-                "-v dbName=\"'${context.registry.name}'\" " +
-                        "-v appRoleName=\"'${context.citus.appRole}'\" " +
-                        "-v admRoleName=\"'${context.citus.adminRole}'\"")
-        context.citus.psqlScript(context.citus.masterRepPod, DB_GRANTS_REPLICA_SQL,
-                "-v dbName=\"'${context.registry.name}'\" " +
-                        "-v appRoleName=\"'${context.citus.appRole}'\"")
     }
 
     private void runLiquibase(LinkedHashMap params) {
