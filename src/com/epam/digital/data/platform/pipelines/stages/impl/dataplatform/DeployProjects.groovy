@@ -31,6 +31,7 @@ class DeployProjects {
                             'image.name'                          : "${context.dockerRegistry.host}/${context.namespace}/" +
                                     "${dataComponent.codebaseName}-${dataComponent.codebaseBranch}",
                             'image.version'                       : context.registry.version,
+                            'dockerProxyRegistry'                 : context.dockerRegistry.proxyHost,
                             'version'                             : context.registry.version,
                             'keycloak.url'                        : context.keycloak.url,
                             'ceph.httpEndpoint'                   : Ceph.CEPH_INTERNAL_ENDPOINT,
