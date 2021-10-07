@@ -71,8 +71,6 @@ class CreateSchema {
 
     private void runLiquibase(LinkedHashMap params) {
         context.script.sh(script: "java -jar ${LIQUIBASE_JAR} " +
-                "--hub-mode=off " +
-                "--liquibaseSchemaName=public " +
                 "--classpath=${LIQUIBASE_CLASSPATH} " +
                 "--driver=org.postgresql.Driver " +
                 "--changeLogFile=${params.get("changeLogFile")} " +
