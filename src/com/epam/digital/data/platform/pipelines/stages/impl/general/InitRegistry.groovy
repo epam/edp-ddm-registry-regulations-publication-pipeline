@@ -28,9 +28,6 @@ class InitRegistry {
             context.dataComponents.put(it.getValue(), dataComponent)
             context.logger.debug("Initialized data component: ${dataComponent.toString()}")
         }
-        /* Remove soap-api if there is no tag "exposeSearchCondition" in data-model */
-        if (context.script.sh(script: "grep -iRw exposeSearchCondition data-model/ || true", returnStdout: true).trim() == "")
-            context.dataComponents.remove(DataComponentType.SOAP_API.getValue())
         context.logger.info("Registry and registry data components have been successfully initialized")
     }
 }
