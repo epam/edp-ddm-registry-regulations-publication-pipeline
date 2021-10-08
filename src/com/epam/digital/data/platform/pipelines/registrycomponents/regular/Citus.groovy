@@ -74,6 +74,10 @@ class Citus {
     void psqlScript(String pod, String script, String options = "") {
         context.platform.podExec(pod, "psql -U ${user} -f ${script} ${options}")
     }
+    
+    void getCurrentSchema(String pod, String database = "") {
+        context.platform.podExec(pod, "psql ${database} -U ${user} -t -c \"select current_schema();\"")
+    }
 
     @Override
     String toString() {

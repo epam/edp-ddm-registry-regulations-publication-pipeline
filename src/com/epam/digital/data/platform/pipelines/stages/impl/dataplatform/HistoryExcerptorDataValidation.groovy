@@ -11,9 +11,10 @@ class HistoryExcerptorDataValidation {
     void run() {
 
         context.logger.info("Validating requested table name")
+        String currentSchemaName = context.citus.getCurrentSchema(context.citus.masterRepPod, "registry").trim()
         if (!context.citus.psqlCommand(context.citus.masterRepPod,
                 "select count(*) from pg_tables where tablename='${context.script.env.NAME_OF_TABLE}' " +
-                        "and schemaname='public';", "registry").trim().toBoolean()) {
+                        "and schemaname='${currentSchemaName}';", "registry").trim().toBoolean()) {
             context.script.error("Table ${context.script.env.NAME_OF_TABLE} does'nt exist. Validadion FAILED")
         }
         context.logger.info("Table name validation passed")

@@ -27,6 +27,8 @@ class CreateExcerptorJob {
                 'deploy'                 : "true",
                 'buildId'                : context.script.env.BUILD_NUMBER,
                 'tableName'              : context.getParameterValue("NAME_OF_TABLE"),
+                'DB_SCHEMA'              : context.citus.getCurrentSchema(context.citus.masterRepPod,
+                        "registry").trim(),
                 'id'                     : context.getParameterValue("ID"),
                 'token'                  : context.keycloak.getAccessToken(context.historyExcerptor),
                 'data.requestBucketName' : context.platform.getJsonPathValue(Ceph.OBJECT_BUCKET_CLAIM_API,
