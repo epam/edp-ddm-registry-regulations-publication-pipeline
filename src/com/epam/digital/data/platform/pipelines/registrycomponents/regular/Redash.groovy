@@ -9,6 +9,7 @@ class Redash {
     private final String VIEWER_KEY_JSON_PATH = "viewer-api-key"
     private final String ADMIN_KEY_JSON_PATH = "admin-api-key"
     private final String REDASH_API_KEY_SECRET = "redash-api-keys"
+    private final String REDASH_SETUP_SECRET = "redash-setup-secret"
 
     public String viewerUrl
     public String adminUrl
@@ -23,30 +24,42 @@ class Redash {
     void init() {
         viewerUrl = "https://${context.platform.getJsonPathValue("route", "redash-viewer", ".spec.host")}"
         adminUrl = "https://${context.platform.getJsonPathValue("route", "redash-admin", ".spec.host")}"
-        initApiKeys()
         viewerApiKey = context.platform.getSecretValue(REDASH_API_KEY_SECRET, VIEWER_KEY_JSON_PATH)
         adminApiKey = context.platform.getSecretValue(REDASH_API_KEY_SECRET, ADMIN_KEY_JSON_PATH)
+        initApiKeys()
     }
 
     private void initApiKeys() {
-        String annotation = "is-patched"
-        if (context.platform.getJsonPathValue("secret", REDASH_API_KEY_SECRET,
-                ".metadata.annotations.${annotation}").toBoolean()) {
-            context.logger.info("Redash api key secret is up to date")
-        } else {
-            context.logger.info("Redash api key secret is not yet initialized")
-            String initialPassword = context.platform.getSecretValue("redash-setup-secret", "password")
-            context.platform.patch("secret", REDASH_API_KEY_SECRET, "\'{\"data\": {\"${VIEWER_KEY_JSON_PATH}\": " +
-                    "\"${regenerateApiKey(viewerUrl, initialPassword)}\"}}\'")
-            context.platform.patch("secret", REDASH_API_KEY_SECRET, "\'{\"data\": {\"${ADMIN_KEY_JSON_PATH}\": " +
-                    "\"${regenerateApiKey(adminUrl, initialPassword)}\"}}\'")
-            context.platform.annotate("secret", REDASH_API_KEY_SECRET, annotation, "true", true)
+        boolean isKeysRegenerated = false
+        def adminResponse = context.script.httpRequest url: "${adminUrl}/api/users",
+                httpMode: "GET",
+                customHeaders: [[name: "authorization", value: adminApiKey, maskValue: true]],
+                consoleLogResponseBody: context.logLevel == "DEBUG",
+                quiet: context.logLevel != "DEBUG",
+                validResponseCodes: "200,404"
+        def viewerResponse = context.script.httpRequest url: "${viewerUrl}/api/users",
+                httpMode: "GET",
+                customHeaders: [[name: "authorization", value: viewerApiKey, maskValue: true]],
+                consoleLogResponseBody: context.logLevel == "DEBUG",
+                quiet: context.logLevel != "DEBUG",
+                validResponseCodes: "200,404"
 
-            String redashExporterDeployment = "deployment/redash-exporter"
-            context.platform.scale(redashExporterDeployment, 0)
-            context.script.sleep(5)
-            context.platform.scale(redashExporterDeployment, 1)
+        if (adminResponse.getStatus() == 404) {
+            context.logger.info("Redash admin api key is no more valid or not yet initialised")
+            patchRedashSecret(adminUrl, REDASH_SETUP_SECRET, ADMIN_KEY_JSON_PATH)
+            isKeysRegenerated = true
+        } else {
+            context.logger.info("Redash api key secret is up to date for admin")
         }
+        if (viewerResponse.getStatus() == 404) {
+            context.logger.info("Redash viewer api key is no more valid or not yet initialised")
+            patchRedashSecret(viewerUrl, REDASH_SETUP_SECRET, VIEWER_KEY_JSON_PATH)
+            isKeysRegenerated = true
+        } else {
+            context.logger.info("Redash api key secret is up to date for viewer")
+        }
+        if (isKeysRegenerated)
+            restartRedashExporterPod()
     }
 
     private String regenerateApiKey(String url, String password) {
@@ -81,5 +94,18 @@ class Redash {
                 .bytes
                 .encodeBase64()
                 .toString()
+    }
+
+    void restartRedashExporterPod() {
+        String redashExporterDeployment = "deployment/redash-exporter"
+        context.platform.scale(redashExporterDeployment, 0)
+        context.script.sleep(5)
+        context.platform.scale(redashExporterDeployment, 1)
+    }
+
+    void patchRedashSecret(String url, String secretName, String keyJsonPath) {
+        String initialPassword = context.platform.getSecretValue(secretName, "password")
+        context.platform.patch("secret", REDASH_API_KEY_SECRET, "\'{\"data\": {\"${keyJsonPath}\": " +
+                "\"${regenerateApiKey(url, initialPassword)}\"}}\'")
     }
 }
