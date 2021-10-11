@@ -13,38 +13,41 @@ class CreateRedashSnippets {
 
     void run() {
         if (context.registryRegulations.filesToDeploy.get(RegulationType.REPORTS)) {
-        def response = context.script.httpRequest url: "${context.redash.adminUrl}/api/query_snippets",
-                httpMode: "GET",
-                contentType: "APPLICATION_JSON",
-                customHeaders: [[name: "Authorization", value: context.redash.adminApiKey, maskValue: true]],
-                consoleLogResponseBody: context.logLevel == "DEBUG",
-                quiet: context.logLevel != "DEBUG",
-                validResponseCodes: "200"
-        if (response.content == "[]") {
-            try {
-                context.logger.info("Publishing redash snippets")
-                context.script.sh(script: "java -jar " +
-                        "-DREDASH_URL=${context.redash.adminUrl} " +
-                        "-DREDASH_API_KEY=${context.redash.adminApiKey} " +
-                        "-DPOSTGRES_PASSWORD=${context.citus.password} " +
-                        "-DPOSTGRES_USER=${context.citus.user} " +
-                        "-DDB_NAME=${context.registry.name} " +
-                        "-DDB_URL=${context.citus.CITUS_MASTER_REP_URL} " +
-                        "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
-                        "-DPWD_ADMIN=${context.citus.analyticsAdminRolePass} " +
-                        "-DPWD_AUDITOR=${context.citus.auditRolePass} " +
-                        "${REDASH_PUBLISHER_JAR} " +
-                        "--reports " +
-                        "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
-                context.logger.info("Redash snippets have been successfully published")
+            context.script.retry(5) {
+                def response = context.script.httpRequest url: "${context.redash.adminUrl}/api/query_snippets",
+                        httpMode: "GET",
+                        contentType: "APPLICATION_JSON",
+                        customHeaders: [[name: "Authorization", value: context.redash.adminApiKey, maskValue: true]],
+                        consoleLogResponseBody: context.logLevel == "DEBUG",
+                        quiet: context.logLevel != "DEBUG",
+                        validResponseCodes: "200"
+                context.logger.debug("Redash admin response: ${response.content}")
+                if (response.content == "[]") {
+                    try {
+                        context.logger.info("Publishing redash snippets")
+                        context.script.sh(script: "java -jar " +
+                                "-DREDASH_URL=${context.redash.adminUrl} " +
+                                "-DREDASH_API_KEY=${context.redash.adminApiKey} " +
+                                "-DPOSTGRES_PASSWORD=${context.citus.password} " +
+                                "-DPOSTGRES_USER=${context.citus.user} " +
+                                "-DDB_NAME=${context.registry.name} " +
+                                "-DDB_URL=${context.citus.CITUS_MASTER_REP_URL} " +
+                                "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
+                                "-DPWD_ADMIN=${context.citus.analyticsAdminRolePass} " +
+                                "-DPWD_AUDITOR=${context.citus.auditRolePass} " +
+                                "${REDASH_PUBLISHER_JAR} " +
+                                "--reports " +
+                                "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
+                        context.logger.info("Redash snippets have been successfully published")
+                    }
+                    catch (any) {
+                        context.logger.warn("Publishing snippets failed")
+                    }
+                    context.logger.info("Redash snippets creation have been finished")
+                } else {
+                    context.logger.info("Redash snippets are already published")
+                }
             }
-            catch (any) {
-                context.logger.warn("Publishing snippets failed")
-            }
-            context.logger.info("Redash snippets creation have been finished")
-        } else {
-            context.logger.info("Redash snippets are already published")
-        }
         } else {
             context.logger.info("Skip redash snippets creation due to no changes")
         }

@@ -26,7 +26,9 @@ class Redash {
         adminUrl = "https://${context.platform.getJsonPathValue("route", "redash-admin", ".spec.host")}"
         viewerApiKey = context.platform.getSecretValue(REDASH_API_KEY_SECRET, VIEWER_KEY_JSON_PATH)
         adminApiKey = context.platform.getSecretValue(REDASH_API_KEY_SECRET, ADMIN_KEY_JSON_PATH)
-        initApiKeys()
+        context.script.retry(5) {
+            initApiKeys()
+        }
     }
 
     private void initApiKeys() {
@@ -37,12 +39,14 @@ class Redash {
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200,404"
+        context.logger.debug("Redash admin response: ${adminResponse.content}")
         def viewerResponse = context.script.httpRequest url: "${viewerUrl}/api/users",
                 httpMode: "GET",
                 customHeaders: [[name: "authorization", value: viewerApiKey, maskValue: true]],
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200,404"
+        context.logger.debug("Redash viewer response: ${viewerResponse.content}")
 
         if (adminResponse.getStatus() == 404) {
             context.logger.info("Redash admin api key is no more valid or not yet initialised")
