@@ -27,8 +27,6 @@ import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
 class DeleteRegistry {
     BuildContext context
 
-    private String CITUS_JOB_NAME = "run-db-scripts-job"
-    private String CITUS_JOB_FILENAME = "citus-job.yaml"
     private String CLEANUP_REGISTRY_SQL = "CleanupRegistry.sql"
 
     void run() {
@@ -56,27 +54,20 @@ class DeleteRegistry {
 
         context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
         context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 0)
-        Map binding = ["REGISTRY_NAME": context.registry.name]
+        Map binding = ["OWNER_ROLE": context.citus.ownerRole]
         String template = context.script.libraryResource("sql/${CLEANUP_REGISTRY_SQL}")
         context.script.writeFile(file: "sql/${CLEANUP_REGISTRY_SQL}", text: TemplateRenderer.renderTemplate(template, binding))
 
-        context.logger.info("Cleaning Citus DB on replica")
+        context.logger.info("Cleaning registry DB on replica")
         context.script.sh(script: "oc rsync sql/ ${context.citus.masterRepPod}:/tmp/")
-        context.citus.psqlCommand(context.citus.masterRepPod, "DROP SUBSCRIPTION operational_sub;", context.registry.name)
-        context.citus.psqlScript(context.citus.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}")
+        context.citus.psqlScript(context.citus.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
 
-        context.logger.info("Cleaning Citus DB on master")
+        context.logger.info("Cleaning registry DB on master")
         context.script.sh(script: "oc rsync sql/ ${context.citus.masterPod}:/tmp/")
-        context.citus.psqlCommand(context.citus.masterPod, "DROP PUBLICATION analytical_pub;", context.registry.name)
-        context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}")
+        context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
 
         context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
         context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
 
-        context.logger.info("Restoring registry DB objects")
-        context.platform.get("job", CITUS_JOB_NAME,
-                "-o yaml --export | sed \'/selector/d; /matchLabels/d; /controller-uid/d\' > $CITUS_JOB_FILENAME;")
-        context.platform.deleteObject("job", CITUS_JOB_NAME)
-        context.platform.apply(CITUS_JOB_FILENAME)
     }
 }
