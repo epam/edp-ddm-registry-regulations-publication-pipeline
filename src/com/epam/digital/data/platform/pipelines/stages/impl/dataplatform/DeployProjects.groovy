@@ -1,7 +1,6 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.dataplatform
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.registrycomponents.external.Ceph
 import com.epam.digital.data.platform.pipelines.registrycomponents.generated.DataComponentType
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
@@ -33,12 +32,7 @@ class DeployProjects {
                             'image.version'                       : context.registry.version,
                             'dockerProxyRegistry'                 : context.dockerRegistry.proxyHost,
                             'version'                             : context.registry.version,
-                            'keycloak.url'                        : context.keycloak.url,
-                            'ceph.httpEndpoint'                   : Ceph.CEPH_INTERNAL_ENDPOINT,
-                            'datafactoryResponseCeph.httpEndpoint': Ceph.CEPH_INTERNAL_ENDPOINT,
-                            'datafactoryceph.httpEndpoint'        : Ceph.CEPH_INTERNAL_ENDPOINT,
-                            'datafactoryFileCeph.httpEndpoint'    : Ceph.CEPH_INTERNAL_ENDPOINT,
-                            'lowcodeFileCeph.httpEndpoint'        : Ceph.CEPH_INTERNAL_ENDPOINT
+                            'keycloak.url'                        : context.keycloak.url
                     ]
 
                     context.script.dir(dataComponent.getWorkDir()) {
