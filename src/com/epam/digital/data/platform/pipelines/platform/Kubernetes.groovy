@@ -92,7 +92,9 @@ class Kubernetes implements IPlatform {
         String command = "${CLI} get ${objectType} ${objectName} --ignore-not-found=true"
         if (project)
             command = "${command} -n ${project}"
-        if (context.script.sh(script: command, returnStdout: true).trim() == "")
+        String commandOutput = context.script.sh(script: command, returnStdout: true).trim()
+        context.logger.info("Get object command output: " + commandOutput)
+        if (commandOutput == "")
             return false
         return true
     }
