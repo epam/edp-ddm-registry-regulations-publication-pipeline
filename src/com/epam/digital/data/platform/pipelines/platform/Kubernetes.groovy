@@ -50,6 +50,8 @@ class Kubernetes implements IPlatform {
         deploymentName.split(',').each {
             patch("deployment", it, "\'{\"spec\":{\"template\":" +
                     "{\"metadata\":{\"annotations\":{\"reload_by\":\"${context.script.env.BUILD_TAG}\"}}}}}\'")
+            patch("deployment", it, "\'{\"spec\":{\"template\":" +
+                    "{\"metadata\":{\"annotations\":{\"date\":\"${new Date()}\"}}}}}\'")
             context.script.sleep(5)
             context.script.sh(script: "${CLI} rollout status deployment ${it}")
         }
