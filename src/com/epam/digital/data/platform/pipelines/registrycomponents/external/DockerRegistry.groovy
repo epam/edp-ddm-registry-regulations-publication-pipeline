@@ -23,11 +23,20 @@ class DockerRegistry {
         host = context.platform.getJsonPathValue("edpcomponent", "docker-registry", ".spec.url")
         proxyHost = context.platform.getJsonPathValue("edpcomponent", "docker-proxy-registry", ".spec.url")
         if (!context.platform.checkObjectExists("secret", PUSH_SECRET)) {
-            context.platform.create("secret docker-registry", PUSH_SECRET, "" +
-                    "--docker-username=${ciUser} " +
-                    "--docker-password=${ciUserPassword} " +
-                    "--docker-server=${host} " +
-                    "--docker-email=ci.user@mdtu-ddm.edp.com")
+            try {
+                context.platform.create("secret docker-registry", PUSH_SECRET, "" +
+                        "--docker-username=${ciUser} " +
+                        "--docker-password=${ciUserPassword} " +
+                        "--docker-server=${host} " +
+                        "--docker-email=ci.user@mdtu-ddm.edp.com")
+            }
+            catch (any) {
+                if (context.platform.checkObjectExists("secret", PUSH_SECRET)) {
+                    context.logger.info("Secret $PUSH_SECRET has already been created")
+                } else {
+                    context.script.error("Secret $PUSH_SECRET does not exist")
+                }
+            }
         }
     }
 
