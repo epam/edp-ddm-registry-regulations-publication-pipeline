@@ -12,11 +12,8 @@ class CleanUpTrigger {
 
     void run() {
         context.logger.info("Removing Data Services codebasebranches")
-        context.dataComponents.values().each {
-            context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component " +
-                    "-l version=${context.registry.version}")
-            context.platform.deleteObject(Codebase.CODEBASE_CR, it.codebaseName)
-        }
+        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
+        context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
 
         context.logger.info("Removing registry-regulations codebasebranch codebase CR")
         context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "${context.codebase.name}-${context.codebase.branch}")
