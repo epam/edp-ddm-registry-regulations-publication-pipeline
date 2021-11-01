@@ -11,7 +11,8 @@ class DeleteServices {
 
     void run() {
         context.logger.info("Removing ${context.codebase.name} helm release")
-        Helm.uninstall(context, context.codebase.name, context.namespace, true)
+        Helm.uninstall(context, context.codebase.name.substring(0, context.codebase.name.length() - 6),
+                context.namespace, true)
 
         context.logger.info("Removing ${context.codebase.name} repo")
         context.gitServer.deleteRepository(context.codebase.name)
