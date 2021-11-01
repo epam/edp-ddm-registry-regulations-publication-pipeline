@@ -36,7 +36,7 @@ class DeployProjects {
                     ]
 
                     context.script.dir(dataComponent.getWorkDir()) {
-                        Helm.upgrade(context, dataComponent.codebaseName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
+                        Helm.upgrade(context, dataComponent.fullName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
                                 context.namespace)
                     }
                 }
