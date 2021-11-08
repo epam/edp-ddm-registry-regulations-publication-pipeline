@@ -76,8 +76,8 @@ class CreateSchema {
                 "--driver=org.postgresql.Driver " +
                 "--changeLogFile=${params.get("changeLogFile")} " +
                 "--url=${params.get("url")} " +
-                "--username=${context.citus.user} " +
-                "--password=${context.citus.password} " +
+                "--username=${context.citus.ownerRole} " +
+                "--password=${context.citus.ownerRolePass} " +
                 "--contexts=${params.get("contexts")} " +
                 "--databaseChangeLogTableName=ddm_db_changelog " +
                 "--databaseChangeLogLockTableName=ddm_db_changelog_lock " +
