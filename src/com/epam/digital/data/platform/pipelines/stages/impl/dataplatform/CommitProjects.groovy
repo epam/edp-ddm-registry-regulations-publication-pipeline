@@ -18,7 +18,9 @@ class CommitProjects {
                     context.gitClient.gitSetConfig()
                     context.gitClient.gitAdd()
                     context.gitClient.gitCommit(COMMIT_MESSAGE)
-                    context.gitClient.gitPush(context.codebase.branch)
+                    context.script.retry(5) {
+                        context.gitClient.gitPush(context.codebase.branch)
+                    }
                 }
             }
         }
