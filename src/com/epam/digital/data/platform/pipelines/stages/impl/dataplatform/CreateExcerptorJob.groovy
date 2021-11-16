@@ -26,6 +26,7 @@ class CreateExcerptorJob {
                 'namespace'              : context.namespace,
                 'deploy'                 : "true",
                 'buildId'                : context.script.env.BUILD_NUMBER,
+                'dockerRegistry'         : context.dockerRegistry.proxyHost,
                 'tableName'              : context.getParameterValue("NAME_OF_TABLE"),
                 'DB_SCHEMA'              : context.citus.getCurrentSchema(context.citus.masterRepPod,
                         "registry").trim(),
