@@ -36,6 +36,24 @@ class CreateKeycloakRoles {
                         context.logger.info("Roles from ${file} have been sucessfully created")
                     }
                 }
+                context.script.dir("${context.workDir}/${RegulationType.ROLES.value}") {
+                    try {
+                        ["officer", "citizen"].each {
+                            context.logger.info("Updating ${it}-roles configmap")
+                            String rolesConfigFile = "${it}.yml"
+                            String rolesConfigmapKey = "${it}-roles.yml"
+                            String configmapName = "${it}-roles"
+                            String rolesConfigmapYaml = "registry-regulation:\\n  ${it}:\\n" +
+                                    "${context.script.sh(script: """x=4; awk '{printf "%"'\$x'"s%s\\n", "", \$0}' \
+                        ${rolesConfigFile}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
+                            context.bpmsRestart = context.platform.patchConfigMapKey(configmapName,
+                                    rolesConfigmapKey, rolesConfigmapYaml)
+                            context.logger.info("Configmap ${it}-roles have been successfully updated")
+                        }
+                    } catch (any) {
+                        context.logger.error("Error during officer-roles/citizen-roles configmap updating")
+                    }
+                }
             } else {
                 context.logger.info("Skip ${RegulationType.ROLES.value} creation due to empty change list")
             }

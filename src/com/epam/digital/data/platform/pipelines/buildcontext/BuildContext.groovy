@@ -21,6 +21,7 @@ class BuildContext {
 
     public final String YAML_RESOURCES_RELATIVE_PATH = "templates/kubernetes"
     public final String RESTORE_STAGE = "restore-from-backup"
+    public boolean bpmsRestart = false
 
     public Logger logger
     public IPlatform platform

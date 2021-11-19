@@ -18,8 +18,8 @@ class UploadGlobalVarsChanges {
                 String camundaGlobalVarsYaml = "camunda:\\n  system-variables:\\n" +
                         "${context.script.sh(script: """x=4; awk '{printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
-                applyChanges(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP, CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml,
-                        BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME)
+                context.bpmsRestart = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
+                        CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml)
                 context.logger.info("Camunda global have been successfully updated")
 
                 context.logger.info("Updating registry env variables for portals")
@@ -29,22 +29,14 @@ class UploadGlobalVarsChanges {
                         .replaceAll(': ', ': \'')
                         .replaceAll(',', '\',')
                 String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson}};"
-                applyChanges("registry-environment-js", "registry-environment.js", jsRegistryEnvVarsJson,
-                        "citizen-portal,officer-portal")
+                context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
+                        jsRegistryEnvVarsJson)
+                context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
                 context.logger.info("Registry env variables have been successfully updated")
             } catch (any) {
                 context.logger.error("Error during uploading global variables changes")
                 context.stageFactory.runStage(context.RESTORE_STAGE, context)
             }
-        }
-    }
-
-    private void applyChanges(String configMapName, String key, String value, String deploymentName) {
-        if (context.platform.patchConfigMapKey(configMapName, key, value)) {
-            context.logger.info("Config map ${configMapName} is changed. Triggering rollout of ${deploymentName}")
-            context.platform.triggerDeploymentRollout(deploymentName)
-        } else {
-            context.logger.info("Config map ${configMapName} is not changed")
         }
     }
 }
