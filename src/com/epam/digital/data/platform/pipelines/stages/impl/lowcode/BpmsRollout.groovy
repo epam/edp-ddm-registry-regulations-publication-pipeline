@@ -26,7 +26,11 @@ class BpmsRollout {
     BuildContext context
 
     void run() {
-        if (context.bpmsRestart)
-            context.platform.triggerDeploymentRollout(BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME)
+        context.bpmsConfigMapsChanged.values().each { changed ->
+            if (changed) {
+                context.platform.triggerDeploymentRollout(BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME)
+                return
+            }
+        }
     }
 }

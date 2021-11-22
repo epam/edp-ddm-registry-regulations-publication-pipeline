@@ -37,7 +37,6 @@ class BuildContext {
 
     public final String YAML_RESOURCES_RELATIVE_PATH = "templates/kubernetes"
     public final String RESTORE_STAGE = "restore-from-backup"
-    public boolean bpmsRestart = false
 
     public Logger logger
     public IPlatform platform
@@ -48,6 +47,7 @@ class BuildContext {
 
     public Registry registry
     public LinkedHashMap<String, DataComponent> dataComponents
+    public LinkedHashMap<String, Boolean> bpmsConfigMapsChanged
     public RegistryRegulations registryRegulations
     public Keycloak keycloak
     public Citus citus
