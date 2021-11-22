@@ -29,9 +29,10 @@ class UploadGlobalVarsChanges {
                         .replaceAll(': ', ': \'')
                         .replaceAll(',', '\',')
                 String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson}};"
-                context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
-                        jsRegistryEnvVarsJson)
-                context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
+                if (context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
+                        jsRegistryEnvVarsJson)) {
+                    context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
+                }
                 context.logger.info("Registry env variables have been successfully updated")
             } catch (any) {
                 context.logger.error("Error during uploading global variables changes")
