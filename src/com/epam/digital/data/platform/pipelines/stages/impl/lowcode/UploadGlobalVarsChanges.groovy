@@ -34,7 +34,7 @@ class UploadGlobalVarsChanges {
                 String camundaGlobalVarsYaml = "camunda:\\n  system-variables:\\n" +
                         "${context.script.sh(script: """x=4; awk '{printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
-                сontext.bpmsConfigMapsChanged["globalVars"] = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
+                context.bpmsConfigMapsChanged["globalVars"] = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
                         CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml)
                 context.logger.info("Camunda global have been successfully updated")
 

@@ -62,7 +62,7 @@ class CreateKeycloakRoles {
                             String rolesConfigmapYaml = "registry-regulation:\\n  ${it}:\\n" +
                                     "${context.script.sh(script: """x=4; awk '{printf "%"'\$x'"s%s\\n", "", \$0}' \
                         ${rolesConfigFile}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
-                            сontext.bpmsConfigMapsChanged["${it}Roles"] = context.platform.patchConfigMapKey(configmapName,
+                            context.bpmsConfigMapsChanged["${it}Roles"] = context.platform.patchConfigMapKey(configmapName,
                                     rolesConfigmapKey, rolesConfigmapYaml)
                             context.logger.info("Configmap ${it}-roles have been successfully updated")
                         }

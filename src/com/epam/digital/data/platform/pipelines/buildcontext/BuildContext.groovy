@@ -47,7 +47,7 @@ class BuildContext {
 
     public Registry registry
     public LinkedHashMap<String, DataComponent> dataComponents
-    public LinkedHashMap<String, Boolean> bpmsConfigMapsChanged
+    public LinkedHashMap<String, Boolean> bpmsConfigMapsChanged = [:]
     public RegistryRegulations registryRegulations
     public Keycloak keycloak
     public Citus citus
