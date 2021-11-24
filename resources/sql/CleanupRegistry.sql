@@ -35,3 +35,10 @@ alter schema registry owner to ${OWNER_ROLE};
 
 -- grants
 grant usage on schema registry to public;
+
+-- create schema registry on workers
+select run_command_on_workers('create schema if not exists registry');
+select run_command_on_workers('alter schema registry owner to ${OWNER_ROLE}');
+
+-- grants on workers
+select run_command_on_workers('grant usage on schema registry to public');
