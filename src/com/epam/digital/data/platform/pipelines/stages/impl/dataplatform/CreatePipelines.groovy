@@ -27,17 +27,19 @@ class CreatePipelines {
 
     void run() {
         context.dataComponents.values().each { dataComponent ->
-            if (!Jenkins.getInstanceOrNull().getItemByFullName(dataComponent.pipelineName)) {
-                context.logger.info("Generating pipeline for ${dataComponent.name}")
-                context.script.build job: "job-provisions/ci/${dataComponent.jobProvisioner}",
-                        wait: true, propagate: true, parameters: [
-                        [$class: 'StringParameterValue', name: 'NAME', value: dataComponent.codebaseName],
-                        [$class: 'StringParameterValue', name: 'BUILD_TOOL', value: dataComponent.BUILD_TOOL],
-                        [$class: 'StringParameterValue', name: 'DEFAULT_BRANCH', value: dataComponent.codebaseBranch],
-                        [$class: 'StringParameterValue', name: 'BRANCH', value: dataComponent.codebaseBranch],
-                        [$class: 'StringParameterValue', name: 'REPOSITORY_PATH', value: dataComponent.repositoryPath],
-                        [$class: 'StringParameterValue', name: 'GIT_CREDENTIALS_ID', value: context.gitServer.credentialsId],
-                ]
+            context.script.retry(3) {
+                if (!Jenkins.getInstanceOrNull().getItemByFullName(dataComponent.pipelineName)) {
+                    context.logger.info("Generating pipeline for ${dataComponent.name}")
+                    context.script.build job: "job-provisions/ci/${dataComponent.jobProvisioner}",
+                            wait: true, propagate: true, parameters: [
+                            [$class: 'StringParameterValue', name: 'NAME', value: dataComponent.codebaseName],
+                            [$class: 'StringParameterValue', name: 'BUILD_TOOL', value: dataComponent.BUILD_TOOL],
+                            [$class: 'StringParameterValue', name: 'DEFAULT_BRANCH', value: dataComponent.codebaseBranch],
+                            [$class: 'StringParameterValue', name: 'BRANCH', value: dataComponent.codebaseBranch],
+                            [$class: 'StringParameterValue', name: 'REPOSITORY_PATH', value: dataComponent.repositoryPath],
+                            [$class: 'StringParameterValue', name: 'GIT_CREDENTIALS_ID', value: context.gitServer.credentialsId],
+                    ]
+                }
             }
         }
     }
