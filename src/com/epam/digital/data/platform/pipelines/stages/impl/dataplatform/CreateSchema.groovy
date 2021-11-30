@@ -75,13 +75,15 @@ class CreateSchema {
         runLiquibase(changeLogFile: LIQUIBASE_POST_DEPLOY_SCRIPT,
                 url: CITUS_MASTER_REGISTRY_DB_URL,
                 contexts: "all,pub",
-                dbName: context.registry.name)
+                dbName: context.registry.name,
+                regVersion: context.registry.version)
 
         context.logger.info("Post deploy replica")
         runLiquibase(changeLogFile: LIQUIBASE_POST_DEPLOY_SCRIPT,
                 url: CITUS_MASTER_REP_REGISTRY_DB_URL,
                 contexts: "all,sub",
-                dbName: context.registry.name)
+                dbName: context.registry.name,
+                regVersion: context.registry.version)
 
     }
 
