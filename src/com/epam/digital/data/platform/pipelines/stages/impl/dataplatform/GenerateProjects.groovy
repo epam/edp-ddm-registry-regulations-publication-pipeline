@@ -32,6 +32,9 @@ class GenerateProjects {
         context.dataComponents.values().each {
             modules += "--module=${it.name} "
         }
+        String platformValuesPath = "${context.getWorkDir()}/platform-values.yaml"
+        context.script.sh(script: "helm get values registry-configuration > " +
+                "${platformValuesPath}")
 
         context.logger.info("Generating data services")
         context.script.sh(script: "cp ${context.registry.SETTINGS_FILE} ${SVC_GEN_UTIL_DIR}")
@@ -43,6 +46,7 @@ class GenerateProjects {
                     "-DDB_URL=${context.citus.CITUS_MASTER_URL} " +
                     "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
                     "-Dsettings=${context.getWorkDir()}/${context.registry.SETTINGS_FILE} " +
+                    "-DPLATFORM_VALUES_PATH=${platformValuesPath} " +
                     "${SVC_GEN_UTIL_DIR}/service-generation-utility.jar " +
                     "${modules} " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
