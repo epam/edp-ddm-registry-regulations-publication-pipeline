@@ -28,6 +28,7 @@ class DeleteRegistry {
     BuildContext context
 
     private String CLEANUP_REGISTRY_SQL = "CleanupRegistry.sql"
+    private String CLEANUP_PROCESS_HISTORY_SQL = "CleanupProcessHistory.sql"
 
     void run() {
         try {
@@ -65,6 +66,9 @@ class DeleteRegistry {
         context.logger.info("Cleaning registry DB on master")
         context.script.sh(script: "oc rsync sql/ ${context.citus.masterPod}:/tmp/")
         context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
+
+        context.logger.info("Cleaning process_history DB on master")
+        context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_PROCESS_HISTORY_SQL}")
 
         context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
         context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
