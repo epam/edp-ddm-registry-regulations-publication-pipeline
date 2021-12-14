@@ -56,15 +56,19 @@ class DeleteRegistry {
         context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
         context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 0)
         Map binding = ["OWNER_ROLE": context.citus.ownerRole]
+
+        context.logger.info("Copy DB scripts on citus master and replica")
         String template = context.script.libraryResource("sql/${CLEANUP_REGISTRY_SQL}")
         context.script.writeFile(file: "sql/${CLEANUP_REGISTRY_SQL}", text: TemplateRenderer.renderTemplate(template, binding))
+        String cleanupProcessHistorySqlResource = context.script.libraryResource("sql/${CLEANUP_PROCESS_HISTORY_SQL}")
+        context.script.writeFile(file: "sql/${CLEANUP_PROCESS_HISTORY_SQL}", text: cleanupProcessHistorySqlResource)
+        context.script.sh(script: "oc rsync sql/ ${context.citus.masterRepPod}:/tmp/")
+        context.script.sh(script: "oc rsync sql/ ${context.citus.masterPod}:/tmp/")
 
         context.logger.info("Cleaning registry DB on replica")
-        context.script.sh(script: "oc rsync sql/ ${context.citus.masterRepPod}:/tmp/")
         context.citus.psqlScript(context.citus.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
 
         context.logger.info("Cleaning registry DB on master")
-        context.script.sh(script: "oc rsync sql/ ${context.citus.masterPod}:/tmp/")
         context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
 
         context.logger.info("Cleaning process_history DB on master")
