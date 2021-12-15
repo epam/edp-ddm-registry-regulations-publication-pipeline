@@ -91,13 +91,11 @@ class Redash {
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "302"
-        ArrayList cookies = loginResponse.getHeaders()
+        String cookie = loginResponse.getHeaders()
                 .get("Set-Cookie")
                 .toString()
                 .replace("[", "")
                 .replace("]", "")
-                .split("Path=/, ")
-       String cookie = cookies.find { it.contains("session") }
 
         if (!cookie)
             context.script.error "Failed to get redash login cookie"
