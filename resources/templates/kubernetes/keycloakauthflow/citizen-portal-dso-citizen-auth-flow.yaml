@@ -3,7 +3,6 @@ kind: KeycloakAuthFlow
 metadata:
   annotations:
     helm.sh/resource-policy: keep
-    helm.sh/hook: pre-install
     meta.helm.sh/release-name: registry-configuration
     meta.helm.sh/release-namespace: ${namespace}
   name: citizen-portal-dso-citizen-auth-flow
@@ -28,11 +27,13 @@ spec:
           citizenDefaultRoles: citizen;unregistered-individual;
           registryMemberCode: '${registryMemberCode}'
           trembitaProtocolVersion: '${trembitaProtocolVersion}'
+          esignHintUrl: https://diia.gov.ua/faq/1
           widgetUrl: 'https://eu.iit.com.ua/sign-widget/v20200922/'
           dsoUrl: 'http://digital-signature-ops:8080/api/esignature/owner'
           registryXRoadInstance: ${registryXRoadInstance}
           clientSubsystemCode: '${clientSubsystemCode}'
           clientMemberCode: '${clientMemberCode}'
+          themeFile: white-theme.js
           clientMemberClass: ${clientMemberClass}
           entrepreneurDefaultRoles: citizen;unregistered-entrepreneur;
           trembitaUrl: ${trembitaUrl}
