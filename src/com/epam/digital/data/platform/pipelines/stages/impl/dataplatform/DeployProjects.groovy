@@ -50,7 +50,12 @@ class DeployProjects {
                             'version'                             : context.registry.version,
                             'keycloak.url'                        : context.keycloak.url
                     ]
-
+                    LinkedHashMap platformValuesPath = context.script.readYaml file: "${context.getWorkDir()}" +
+                            "/platform-values.yaml"
+                    Boolean disableRequestsLimits = platformValuesPath["global"]["disableRequestsLimits"]
+                    if (disableRequestsLimits != null) {
+                        parametersMap.put("global.disableRequestsLimits", disableRequestsLimits)
+                    }
                     context.script.dir(dataComponent.getWorkDir()) {
                         Helm.upgrade(context, dataComponent.fullName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
                                 context.namespace)
