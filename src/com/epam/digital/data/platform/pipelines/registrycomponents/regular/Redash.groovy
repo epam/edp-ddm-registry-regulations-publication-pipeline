@@ -128,4 +128,30 @@ class Redash {
         context.platform.patch("secret", REDASH_API_KEY_SECRET, "\'{\"data\": {\"${keyJsonPath}\": " +
                 "\"${regenerateApiKey(url, initialPassword)}\"}}\'")
     }
+    void deleteRedashResource(String url, String apiKey) {
+        def response = context.script.httpRequest url: "${url}",
+                httpMode: "GET",
+                customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
+                consoleLogResponseBody: context.logLevel == "DEBUG",
+                quiet: context.logLevel != "DEBUG",
+                validResponseCodes: "200"
+        ArrayList parsedJson = new JsonSlurperClassic().parseText(response.content)
+        int resourcesCount = parsedJson.size()
+        resourcesCount.times {
+            String nameValue
+            String id
+            nameValue = parsedJson[it]["name"]
+            if (!nameValue.matches("(.*)audit(.*)") && !nameValue.matches("admin") &&
+                    !nameValue.matches("default")) {
+                id = parsedJson[it]["id"]
+                context.logger.info("Removing not audit resource: " + nameValue)
+                context.script.httpRequest url: "${url}/${id}",
+                        httpMode: "DELETE",
+                        customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
+                        consoleLogResponseBody: context.logLevel == "DEBUG",
+                        quiet: context.logLevel != "DEBUG",
+                        validResponseCodes: "200,204"
+            }
+        }
+    }
 }

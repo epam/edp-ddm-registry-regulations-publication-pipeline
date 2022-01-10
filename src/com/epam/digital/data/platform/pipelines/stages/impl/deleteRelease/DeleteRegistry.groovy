@@ -22,6 +22,7 @@ import com.epam.digital.data.platform.pipelines.registrycomponents.regular.FormM
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
+import com.epam.digital.data.platform.pipelines.tools.Helm
 
 @Stage(name = "delete-registry", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class DeleteRegistry {
@@ -29,6 +30,9 @@ class DeleteRegistry {
 
     private String CLEANUP_REGISTRY_SQL = "CleanupRegistry.sql"
     private String CLEANUP_PROCESS_HISTORY_SQL = "CleanupProcessHistory.sql"
+    private final String REGISTRY_CONF_CHART_NAME = "registry-configuration"
+    private final String DEPLOY_TEMPLATES_PATH = "deploy-templates"
+    private final String REGISTRY_CONF_CONFIGMAP = "registry-pipeline-stage-name"
 
     void run() {
         try {
@@ -77,5 +81,43 @@ class DeleteRegistry {
         context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
         context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
 
+        context.logger.info("Removing Redash objects")
+        LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
+        officerUsersYaml["roles"].each { String role ->
+            try {
+                context.citus.psqlCommand(context.citus.masterRepPod,
+                        "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name)
+            }
+            catch (any) {
+                context.logger.info("Removing of Redash roles failed. Possibly, there are no Redash roles in database.")
+            }
+        }
+        context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",
+                context.redash.viewerApiKey)
+        context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
+
+        context.logger.info("Removing keycloak resources")
+        String centralGerritUrl = context.platform.getJsonPathValue("configmap", REGISTRY_CONF_CONFIGMAP,
+                ".data.gerritCentralUrl")
+        String registryConfRepoPath = context.dnsWildcard.startsWith("apps.cicd") ? 'mdtu-ddm/general' : 'components/registry'
+        String registryConfRepoUrl = "${centralGerritUrl}/${registryConfRepoPath}/$REGISTRY_CONF_CHART_NAME"
+
+        context.gitClient.checkout(registryConfRepoUrl,
+                "mdtuddm-11127", "edp-gerrit-ciuser")
+        ["keycloakrealmidentityproviders", "keycloakauthflows", "keycloakclients", "keycloakclientscopes", "keycloakrealmgroups", "keycloakrealmrolebatches",
+         "keycloakrealmroles", "keycloakrealms"].each { resourceType ->
+            ArrayList<String> resourcesList = context.platform.getAll(resourceType, "--no-headers " +
+                    "-o=custom-columns=NAME:.metadata.name -l created-by=$REGISTRY_CONF_CHART_NAME").tokenize()
+            resourcesList.each { resource ->
+                if (!resource.matches("admin") || resource.matches("redash-admin")) {
+                    context.platform.deleteObject(resourceType, resource)
+                }
+            }
+        }
+        context.logger.info("Removing keycloakclient in user-management namespace")
+            context.platform.deleteObject("keycloakclients", "$context.namespace-citizen-portal", "-n user-management")
+        Helm.upgrade(context, REGISTRY_CONF_CHART_NAME, DEPLOY_TEMPLATES_PATH,
+                ['':''], "-f ${context.registryRegulations.getRegistryConfValues()}",
+                context.namespace, true)
     }
 }

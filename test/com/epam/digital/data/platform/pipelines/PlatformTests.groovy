@@ -122,7 +122,8 @@ class PlatformTests extends BasePipelineTest {
         platform.annotate(MOCK_ARG, MOCK_ARG, MOCK_ARG, MOCK_ARG)
         platform.annotate(MOCK_ARG, MOCK_ARG, MOCK_ARG, MOCK_ARG, true)
         platform.deleteObject(MOCK_ARG, MOCK_ARG)
-        platform.deleteObject(MOCK_ARG, MOCK_ARG, true)
+        platform.deleteObject(MOCK_ARG, MOCK_ARG, MOCK_ARG)
+        platform.deleteObject(MOCK_ARG, MOCK_ARG, MOCK_ARG, true)
         platform.scale(MOCK_ARG, 1)
         platform.waitFor(MOCK_ARG, MOCK_ARG, MOCK_ARG)
 

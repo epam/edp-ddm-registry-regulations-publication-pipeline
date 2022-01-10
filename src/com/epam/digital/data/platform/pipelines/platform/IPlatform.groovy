@@ -29,7 +29,7 @@ interface IPlatform {
 
     void apply(String filePath)
 
-    void deleteObject(String objectType, String objectName, Boolean force)
+    void deleteObject(String objectType, String objectName, String parameters, Boolean force)
 
     boolean checkObjectExists(String objectType, String objectName, String project)
 

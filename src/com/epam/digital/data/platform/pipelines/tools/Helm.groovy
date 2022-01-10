@@ -20,7 +20,7 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 
 class Helm {
     static void upgrade(BuildContext context, String releaseName, String deployTemplatesPath,
-                        LinkedHashMap<String, String> parameters, String namespace, boolean wait = false) {
+                        LinkedHashMap<String, String> parameters, String fileParameters = '', String namespace, boolean wait = false) {
         String parametersString = ""
         parameters.each {
             parametersString += "--set ${it.key}=${it.value} "
@@ -30,7 +30,7 @@ class Helm {
             parametersString += "--wait "
 
         context.script.sh(script: "helm upgrade --install ${releaseName} ${deployTemplatesPath} " +
-                "--namespace ${namespace} ${parametersString}")
+                "${fileParameters} --namespace ${namespace} ${parametersString}")
     }
 
     static void uninstall(BuildContext context, String releaseName, String namespace,

@@ -32,5 +32,12 @@ class DeleteServices {
 
         context.logger.info("Removing ${context.codebase.name} repo")
         context.gitServer.deleteRepository(context.codebase.name)
+
+        context.logger.info("Removing data components buildconfigs")
+        if (context.platform.checkObjectExists("buildconfig", context.codebase.buildConfigName)) {
+            context.platform.deleteObject("buildconfig", context.codebase.buildConfigName)
+        } else {
+            context.logger.info("There is no buildconfig " + context.codebase.buildConfigName)
+        }
     }
 }

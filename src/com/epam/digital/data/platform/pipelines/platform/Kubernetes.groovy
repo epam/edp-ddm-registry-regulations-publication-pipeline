@@ -98,8 +98,8 @@ class Kubernetes implements IPlatform {
     }
 
     @Override
-    void deleteObject(String objectType, String objectName, Boolean force = false) {
-        String command = "${CLI} delete ${objectType} ${objectName}"
+    void deleteObject(String objectType, String objectName, String parameters = "", Boolean force = false) {
+        String command = "${CLI} delete ${objectType} ${objectName} ${parameters}"
         if (force)
             command = "${command} --force --grace-period=0"
         context.script.sh(script: "${command} || true")
