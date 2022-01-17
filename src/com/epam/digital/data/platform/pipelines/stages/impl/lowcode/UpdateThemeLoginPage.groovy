@@ -29,9 +29,16 @@ class UpdateThemeLoginPage {
         try {
             String GLOBAL_VARS_FILE = "${RegulationType.GLOBAL_VARS.value}/camunda-global-system-vars.yml"
             String themeFile = context.script.readYaml(file: GLOBAL_VARS_FILE)["themeFile"]
-            ["officer", "citizen"].each {
-                context.platform.patch("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", 
-                ".spec.authenticationExecutions[1].authenticatorConfig.config.themeFile")
+            if (themeFile) {
+                ["officer", "citizen"].each {
+                String authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", "-o yaml")
+                String tmpFile = "tmp-${it}.yml"
+                context.script.writeFile(file: tmpFile, text: authFlowYaml)
+                context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
+                context.platform.apply(tmpFile)
+                }
+            } else {
+                context.logger.info("Theme file is not set, using default")
             }
         }
         catch (any) {
