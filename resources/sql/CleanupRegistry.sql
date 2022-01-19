@@ -42,3 +42,22 @@ select run_command_on_workers('alter schema registry owner to ${OWNER_ROLE}');
 
 -- grants on workers
 select run_command_on_workers('grant usage on schema registry to public');
+
+-- schema archive
+-- drop schema archive (if exists)
+drop schema if exists archive cascade;
+select run_command_on_workers('drop schema if exists archive cascade');
+
+-- create schema archive
+create schema if not exists archive;
+alter schema archive owner to ${OWNER_ROLE};
+
+-- grants
+grant usage on schema archive to public;
+
+-- create schema archive on workers
+select run_command_on_workers('create schema if not exists archive');
+select run_command_on_workers('alter schema archive owner to ${OWNER_ROLE}');
+
+-- grants on workers
+select run_command_on_workers('grant usage on schema archive to public');
