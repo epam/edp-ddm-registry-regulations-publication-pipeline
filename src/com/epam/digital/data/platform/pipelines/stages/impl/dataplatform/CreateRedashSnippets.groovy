@@ -17,7 +17,6 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.dataplatform
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.registry.RegulationType
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 
@@ -28,7 +27,6 @@ class CreateRedashSnippets {
     private final String REDASH_PUBLISHER_JAR = "/home/jenkins/report-publisher/report-publisher.jar"
 
     void run() {
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.REPORTS)) {
             context.script.retry(5) {
                 def response = context.script.httpRequest url: "${context.redash.adminUrl}/api/query_snippets",
                         httpMode: "GET",
@@ -64,8 +62,5 @@ class CreateRedashSnippets {
                     context.logger.info("Redash snippets are already published")
                 }
             }
-        } else {
-            context.logger.info("Skip redash snippets creation due to no changes")
-        }
     }
 }
