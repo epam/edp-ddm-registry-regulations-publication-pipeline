@@ -27,15 +27,21 @@ class CleanUpTrigger {
     BuildContext context
 
     void run() {
-        context.logger.info("Removing Data Services codebasebranches")
-        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
-        context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
 
-        context.logger.info("Removing registry-regulations codebasebranch codebase CR")
-        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "${context.codebase.name}-${context.codebase.branch}")
-        context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
-        context.logger.info("Removing ${context.codebase.name} repo")
-        context.gitServer.deleteRepository(context.codebase.name)
+        LinkedHashMap parallelDeletion = [:]
+        parallelDeletion["removeDataServices"] = {
+            context.logger.info("Removing Data Services codebasebranches")
+            context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
+            context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
+        }
+        parallelDeletion["removeRegistryRegulation"] = {
+            context.logger.info("Removing registry-regulations codebasebranch codebase CR")
+            context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "${context.codebase.name}-${context.codebase.branch}")
+            context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+            context.logger.info("Removing ${context.codebase.name} repo")
+            context.gitServer.deleteRepository(context.codebase.name)
+        }
+        context.script.parallel(parallelDeletion)
 
         String tmpGerritSecret = "repository-codebase-${context.codebase.name}-temp"
         if (!context.platform.checkObjectExists("secret", tmpGerritSecret)) {
