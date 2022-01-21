@@ -116,18 +116,20 @@ class DeleteRegistry {
                     context.platform.deleteObject(resourceType, resource)
                 }
             }
-        }
-        ArrayList<String> registryRolesList = context.platform.getAll("keycloakrealmrole", "--no-headers " +
-                "-o=custom-columns=NAME:.metadata.name").tokenize()
-        registryRolesList.each { registryRole ->
-            if (registryRole.matches("citizen(.*)") || registryRole.matches("officer(.*)")) {
-                context.platform.deleteObject("keycloakrealmrole", registryRole)
+            if (resourceType == "keycloakrealmroles") {
+                ArrayList<String> registryRolesList = context.platform.getAll("keycloakrealmrole", "--no-headers " +
+                        "-o=custom-columns=NAME:.metadata.name").tokenize()
+                registryRolesList.each { registryRole ->
+                    if (registryRole.matches("citizen(.*)") || registryRole.matches("officer(.*)")) {
+                        context.platform.deleteObject("keycloakrealmrole", registryRole)
+                    }
+                }
             }
         }
         context.logger.info("Removing keycloakclient in user-management namespace")
         context.platform.deleteObject("keycloakclients", "$context.namespace-citizen-portal", "-n user-management")
         Helm.upgrade(context, REGISTRY_CONF_CHART_NAME, DEPLOY_TEMPLATES_PATH,
-                ['':''], "-f ${context.registryRegulations.getRegistryConfValues()}",
+                ['': ''], "-f ${context.registryRegulations.getRegistryConfValues()}",
                 context.namespace, true)
         context.logger.info("Restart user-settings-persistence")
         context.platform.scale("deployment/$USER_SETTINGS_SERVICE_PERSISTENCE_DEPLOYMENT_NAME", 0)
