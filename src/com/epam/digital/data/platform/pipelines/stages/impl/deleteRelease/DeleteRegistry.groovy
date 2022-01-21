@@ -103,7 +103,7 @@ class DeleteRegistry {
         String registryConfRepoUrl = "${centralGerritUrl}/${registryConfRepoPath}/$REGISTRY_CONF_CHART_NAME"
 
         context.gitClient.checkout(registryConfRepoUrl,
-                "mdtuddm-11127", "edp-gerrit-ciuser")
+                "main", "edp-gerrit-ciuser")
         ["keycloakrealmidentityproviders", "keycloakauthflows", "keycloakclients", "keycloakclientscopes", "keycloakrealmgroups", "keycloakrealmrolebatches",
          "keycloakrealmroles", "keycloakrealms"].each { resourceType ->
             ArrayList<String> resourcesList = context.platform.getAll(resourceType, "--no-headers " +
