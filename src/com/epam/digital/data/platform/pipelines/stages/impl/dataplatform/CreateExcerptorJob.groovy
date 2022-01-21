@@ -31,7 +31,7 @@ class CreateExcerptorJob {
         String DEPLOY_TEMPLATES_PATH = "deploy-templates"
         String JOB_YAML = "history-excerptor-job.yaml"
         Helm.upgrade(context, context.codebase.name, DEPLOY_TEMPLATES_PATH,
-                ['namespace': context.namespace], context.namespace, true)
+                ['namespace': context.namespace], "", context.namespace, true)
 
         context.historyExcerptor = new KeycloakClient(context)
 
