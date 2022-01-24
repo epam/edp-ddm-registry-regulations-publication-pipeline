@@ -131,8 +131,5 @@ class DeleteRegistry {
         Helm.upgrade(context, REGISTRY_CONF_CHART_NAME, DEPLOY_TEMPLATES_PATH,
                 ['': ''], "-f ${context.registryRegulations.getRegistryConfValues()}",
                 context.namespace, true)
-        context.logger.info("Restart user-settings-persistence")
-        context.platform.scale("deployment/$USER_SETTINGS_SERVICE_PERSISTENCE_DEPLOYMENT_NAME", 0)
-        context.platform.scale("deployment/$USER_SETTINGS_SERVICE_PERSISTENCE_DEPLOYMENT_NAME", 1)
     }
 }
