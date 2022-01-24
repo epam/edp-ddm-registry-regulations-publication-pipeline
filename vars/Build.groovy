@@ -88,10 +88,33 @@ void call() {
         context.initWorkDir()
         context.codebase.initBuildTool()
 
-        context.stageFactory.getStagesToRun().each { stage ->
+        context.stageFactory.getStagesToRun().each { stagesBlock ->
             dir(context.getWorkDir()) {
                 dir(context.workDir) {
-                    context.stageFactory.runStage(stage.name, context)
+                    LinkedHashMap parallelStages = [:]
+                    if (stagesBlock.containsKey('parallelStages')) {
+                        stagesBlock.values().each() { parallelStagesBlock ->
+                            parallelStagesBlock.each { parallelStage ->
+                                parallelStages["${parallelStage.name}"] = {
+                                    if (parallelStage instanceof ArrayList) {
+                                        parallelStage.each {
+                                            context.stageFactory.runStage(it.name, context)
+                                        }
+
+                                    } else {
+                                        context.stageFactory.runStage(parallelStage.name, context)
+                                    }
+                                }
+                            }
+                            context.script.parallel parallelStages
+                        }
+                    } else {
+                        stagesBlock.values().each() { sequenceStage ->
+                            sequenceStage.each {
+                                context.stageFactory.runStage(it.name, context)
+                            }
+                        }
+                    }
                 }
             }
         }
