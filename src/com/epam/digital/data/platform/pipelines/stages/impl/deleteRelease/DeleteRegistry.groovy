@@ -34,8 +34,6 @@ class DeleteRegistry {
     private final String DEPLOY_TEMPLATES_PATH = "deploy-templates"
     private final String REGISTRY_CONF_CONFIGMAP = "registry-pipeline-stage-name"
 
-    public final static String USER_SETTINGS_SERVICE_PERSISTENCE_DEPLOYMENT_NAME = "user-settings-service-persistence-deployment"
-
     void run() {
         try {
             context.logger.info("Cleaning form provider DB")
