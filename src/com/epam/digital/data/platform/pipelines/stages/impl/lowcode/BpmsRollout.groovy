@@ -26,8 +26,9 @@ class BpmsRollout {
     BuildContext context
 
     void run() {
-        context.bpmsConfigMapsChanged.values().each { changed ->
-            if (changed) {
+        List array = new ArrayList(context.bpmsConfigMapsChanged.values())
+        for (def entry : array) {
+            if (entry) {
                 context.platform.triggerDeploymentRollout(BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME)
                 return
             }
