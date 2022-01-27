@@ -57,6 +57,11 @@ class Codebase {
         this.imageUrl = "${context.dockerRegistry.host}/${context.namespace}/${imageName}:${imageTag}"
     }
 
+    void setImageName(String imageName) {
+        this.imageName = imageName
+        this.imageUrl = "${context.dockerRegistry.host}/${context.namespace}/${imageName}:${imageTag}"
+    }
+
     void init() {
         this.name = context.getParameterValue("CODEBASE_NAME", "registry")
         this.defaultBranch = getCodebaseSpecField("defaultBranch")

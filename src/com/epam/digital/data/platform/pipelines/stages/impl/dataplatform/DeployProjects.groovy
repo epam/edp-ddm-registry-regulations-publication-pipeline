@@ -43,8 +43,9 @@ class DeployProjects {
                             'namespace'                           : context.namespace,
                             'ciProject'                           : context.namespace,
                             'dnsWildcard'                         : context.dnsWildcard,
-                            'image.name'                          : "${context.dockerRegistry.host}/${context.namespace}/" +
-                                    "${dataComponent.codebaseName}-${dataComponent.codebaseBranch}",
+                            'image.name'                          : context.platform.getJsonPathValue("buildconfig",
+                                    ("${dataComponent.codebaseName}-${dataComponent.codebaseBranch}").replace('.','-'),
+                                    ".spec.output.to.name").toString().split(':')[0],
                             'image.version'                       : context.registry.version,
                             'dockerProxyRegistry'                 : context.dockerRegistry.proxyHost,
                             'version'                             : context.registry.version,
