@@ -106,7 +106,7 @@ class DeleteRegistry {
                 "main", "edp-gerrit-ciuser")
         ["keycloakrealmidentityproviders", "keycloakauthflows", "keycloakclients", "keycloakclientscopes",
          "keycloakrealmgroups", "keycloakrealmrolebatches",
-         "keycloakrealmroles", "keycloakrealms"].each { resourceType ->
+         "keycloakrealmroles"].each { resourceType ->
             ArrayList<String> resourcesList = context.platform.getAll(resourceType, "--no-headers " +
                     "-o=custom-columns=NAME:.metadata.name -l created-by=$REGISTRY_CONF_CHART_NAME").tokenize()
             resourcesList.each { resource ->
