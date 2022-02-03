@@ -88,6 +88,8 @@ class DeleteRegistry {
                 context.logger.info("Removing of Redash roles failed. Possibly, there are no Redash roles in database.")
             }
         }
+        context.platform.podExec("redash-viewer-postgresql-0",
+                "bash -c \'export PGPASSWORD=${context.platform.getSecretValue("redash-chart-postgresql","postgresql-password")}; psql redash -U redash -c \"DELETE FROM events WHERE id > 1; DELETE FROM users WHERE id > 1;\"\'", "")
         context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",
                 context.redash.viewerApiKey)
         context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
