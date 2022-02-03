@@ -62,15 +62,18 @@ class Kubernetes implements IPlatform {
     void triggerDeploymentRollout(String deploymentName) {
         /* "oc rollout" does not support kind Deployment and "kubectl rollout restart" is available only since
         * Kubernetes 1.15 so we just patch date annotation to trigger new rollout */
-
+        LinkedHashMap parallelRollout = [:]
         deploymentName.split(',').each {
-            patch("deployment", it, "\'{\"spec\":{\"template\":" +
-                    "{\"metadata\":{\"annotations\":{\"reload_by\":\"${context.script.env.BUILD_TAG}\"}}}}}\'")
-            patch("deployment", it, "\'{\"spec\":{\"template\":" +
-                    "{\"metadata\":{\"annotations\":{\"date\":\"${new Date()}\"}}}}}\'")
-            context.script.sleep(5)
-            context.script.sh(script: "${CLI} rollout status deployment ${it}")
+            parallelRollout["${it}"] = {
+                patch("deployment", it, "\'{\"spec\":{\"template\":" +
+                        "{\"metadata\":{\"annotations\":{\"reload_by\":\"${context.script.env.BUILD_TAG}\"}}}}}\'")
+                patch("deployment", it, "\'{\"spec\":{\"template\":" +
+                        "{\"metadata\":{\"annotations\":{\"date\":\"${new Date()}\"}}}}}\'")
+                context.script.sleep(5)
+                context.script.sh(script: "${CLI} rollout status deployment ${it}")
+            }
         }
+        context.script.parallel(parallelRollout)
     }
 
     @Override
