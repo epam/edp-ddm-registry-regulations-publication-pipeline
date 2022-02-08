@@ -97,7 +97,7 @@ class Kubernetes implements IPlatform {
 
     @Override
     void apply(String filePath) {
-        context.script.sh(script: "${CLI} apply -f ${filePath}")
+        context.script.sh(script: "${CLI} create -f ${filePath} || ${CLI} replace -f ${filePath}")
     }
 
     @Override
