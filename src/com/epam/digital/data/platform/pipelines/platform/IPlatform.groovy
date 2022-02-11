@@ -43,6 +43,8 @@ interface IPlatform {
 
     String get(String resource, String name, String parameters)
 
+    LinkedHashMap getAsJson(String resource, String name)
+
     String getAll(String resource, String parameters)
 
     void addSccToUser(String user, String scc, String project)

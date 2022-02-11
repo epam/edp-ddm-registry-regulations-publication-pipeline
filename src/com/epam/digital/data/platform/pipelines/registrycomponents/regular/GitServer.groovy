@@ -29,16 +29,19 @@ abstract class GitServer {
     public String host
     public String sshPort
 
+    LinkedHashMap gitserverJson
+
     GitServer(BuildContext context, String name) {
         this.name = name
         this.context = context
     }
 
     void init() {
-        this.credentialsId = getGitserverSpecField("nameSshKeySecret")
-        this.autouser = getGitserverSpecField("gitUser")
-        this.host = getGitserverSpecField("gitHost")
-        this.sshPort = getGitserverSpecField("sshPort")
+        this.gitserverJson = context.platform.getAsJson("gitserver.v2.edp.epam.com", name)["spec"]
+        this.credentialsId = this.gitserverJson["nameSshKeySecret"]
+        this.autouser = this.gitserverJson["gitUser"]
+        this.host = this.gitserverJson["gitHost"]
+        this.sshPort = this.gitserverJson["sshPort"]
     }
 
     protected void getGitserverSpecField(final String field) {

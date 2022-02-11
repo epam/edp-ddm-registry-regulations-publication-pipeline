@@ -44,6 +44,8 @@ class Codebase {
     public IBuildTool buildTool
     public String sourceRepository
 
+    LinkedHashMap codebaseJson
+
     Codebase(BuildContext context) {
         this.context = context
     }
@@ -64,29 +66,28 @@ class Codebase {
 
     void init() {
         this.name = context.getParameterValue("CODEBASE_NAME", "registry")
-        this.defaultBranch = getCodebaseSpecField("defaultBranch")
+        this.codebaseJson = context.platform.getAsJson("codebase", this.name)["spec"]
+        this.defaultBranch = this.codebaseJson["defaultBranch"]
         this.branch = context.getParameterValue("CODEBASE_BRANCH", this.defaultBranch).toLowerCase()
         this.repositoryPath = context.getParameterValue("REPOSITORY_PATH")
-        this.jobProvisioner = getCodebaseSpecField("jobProvisioning")
-        this.sourceRepository = getCodebaseSpecField("repository.url")
-        this.type = getCodebaseSpecField("type").toLowerCase()
+        this.jobProvisioner = this.codebaseJson["jobProvisioning"]
+        if (codebaseJson["repository"]) {
+            this.sourceRepository = this.codebaseJson["repository"]["url"]
+        }
+        this.type = this.codebaseJson["type"].toLowerCase()
         if (type == ProjectType.APPLICATION.getValue()) {
             this.imageName = "${name}-${branch}"
             this.imageTag = "latest"
             this.imageUrl = "${context.dockerRegistry.host}/${context.namespace}/${imageName}:${imageTag}"
             this.buildConfigName = imageName.replaceAll('\\.', "-")
         }
-        this.jenkinsAgent = getCodebaseSpecField("jenkinsSlave")
-        this.buildToolSpec = getCodebaseSpecField("buildTool")
+        this.jenkinsAgent = this.codebaseJson["jenkinsSlave"]
+        this.buildToolSpec = this.codebaseJson["buildTool"]
         this.buildTool = BuildToolFactory.getBuildToolImpl(buildToolSpec, context)
     }
 
     void initBuildTool() {
         buildTool.init()
-    }
-
-    private String getCodebaseSpecField(final String field) {
-        return context.platform.getJsonPathValue(CODEBASE_CR, name, ".spec.${field}")
     }
 
     @Override

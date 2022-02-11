@@ -55,7 +55,7 @@ class CreateRedashSnippets {
                         context.logger.info("Redash snippets have been successfully published")
                     }
                     catch (any) {
-                        context.logger.warn("Publishing snippets failed")
+                        context.script.error("Publishing snippets failed")
                     }
                     context.logger.info("Redash snippets creation have been finished")
                 } else {

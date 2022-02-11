@@ -17,6 +17,7 @@
 package com.epam.digital.data.platform.pipelines.registrycomponents.regular
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
 
 class Citus {
     private final BuildContext context
@@ -48,26 +49,32 @@ class Citus {
     public ArrayList<String> workersPods
     public ArrayList<String> workersRepPods
 
+    LinkedHashMap citusSecretJson
+    LinkedHashMap citusSecretRolesJson
+
     Citus(BuildContext context) {
         this.context = context
     }
 
     void init() {
-        user = context.platform.getSecretValue(CITUS_SECRET, "username")
-        password = context.platform.getSecretValue(CITUS_SECRET, "password")
 
-        auditServiceUsername = context.platform.getSecretValue(CITUS_ROLES_SECRET, "anSvcName")
-        auditServicePassword = context.platform.getSecretValue(CITUS_ROLES_SECRET, "anSvcPass")
-        adminRole = context.platform.getSecretValue(CITUS_ROLES_SECRET, "admRoleName")
-        adminRolePass = context.platform.getSecretValue(CITUS_ROLES_SECRET, "admRolePass")
-        ownerRole = context.platform.getSecretValue(CITUS_ROLES_SECRET, "regOwnerName")
-        ownerRolePass = context.platform.getSecretValue(CITUS_ROLES_SECRET, "regOwnerPass")
-        appRole = context.platform.getSecretValue(CITUS_ROLES_SECRET, "appRoleName")
-        appRolePass = context.platform.getSecretValue(CITUS_ROLES_SECRET, "appRolePass")
-        auditRolePass = context.platform.getSecretValue(CITUS_ROLES_SECRET, "anRolePass")
-        excerptExporterUser = context.platform.getSecretValue(CITUS_ROLES_SECRET, "excerptExporterName")
-        excerptExporterPass = context.platform.getSecretValue(CITUS_ROLES_SECRET, "excerptExporterPass")
-        analyticsAdminRolePass = context.platform.getSecretValue(CITUS_ROLES_SECRET, "anAdmPass")
+        citusSecretJson = context.platform.getAsJson("secret", CITUS_SECRET)["data"]
+        user = DecodeHelper.decodeBase64(citusSecretJson["username"])
+        password = DecodeHelper.decodeBase64(citusSecretJson["password"])
+
+        citusSecretRolesJson = context.platform.getAsJson("secret", CITUS_ROLES_SECRET)["data"]
+        auditServiceUsername = DecodeHelper.decodeBase64(citusSecretRolesJson["anSvcName"])
+        auditServicePassword = DecodeHelper.decodeBase64(citusSecretRolesJson["anSvcPass"])
+        adminRole = DecodeHelper.decodeBase64(citusSecretRolesJson["admRoleName"])
+        adminRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["admRolePass"])
+        ownerRole = DecodeHelper.decodeBase64(citusSecretRolesJson["regOwnerName"])
+        ownerRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["regOwnerPass"])
+        appRole = DecodeHelper.decodeBase64(citusSecretRolesJson["appRoleName"])
+        appRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["appRolePass"])
+        auditRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["anRolePass"])
+        excerptExporterUser = DecodeHelper.decodeBase64(citusSecretRolesJson["excerptExporterName"])
+        excerptExporterPass = DecodeHelper.decodeBase64(citusSecretRolesJson["excerptExporterPass"])
+        analyticsAdminRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["anAdmPass"])
 
         masterPod = context.platform.getAll("pods", "-l app=citus-master " +
                 "-o jsonpath=\"{.items[0].metadata.name}\"")
@@ -90,7 +97,7 @@ class Citus {
     void psqlScript(String pod, String script, String options = "") {
         context.platform.podExec(pod, "psql -U ${user} -f ${script} ${options}")
     }
-    
+
     void getCurrentSchema(String pod, String database = "") {
         context.platform.podExec(pod, "psql ${database} -U ${user} -t -c \"select current_schema();\"")
     }

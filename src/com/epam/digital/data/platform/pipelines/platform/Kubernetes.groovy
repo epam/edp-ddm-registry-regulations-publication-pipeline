@@ -17,6 +17,7 @@
 package com.epam.digital.data.platform.pipelines.platform
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import groovy.json.JsonSlurperClassic
 
 class Kubernetes implements IPlatform {
     protected BuildContext context
@@ -133,6 +134,13 @@ class Kubernetes implements IPlatform {
     @Override
     String get(String resource, String name, String parameters = "") {
         context.script.sh(script: "${CLI} get ${resource} ${name} ${parameters}", returnStdout: true)
+    }
+
+    @Override
+    LinkedHashMap getAsJson(String resource, String name) {
+        String text = context.script.sh(script: "${CLI} get ${resource} ${name} -ojson", returnStdout: true)
+        def parsedJson = new JsonSlurperClassic().parseText(text)
+        return parsedJson as LinkedHashMap
     }
 
     @Override

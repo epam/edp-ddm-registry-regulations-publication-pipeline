@@ -17,6 +17,7 @@
 package com.epam.digital.data.platform.pipelines.registrycomponents.external
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
 
 class DockerRegistry {
     private final BuildContext context
@@ -34,8 +35,9 @@ class DockerRegistry {
     }
 
     void init() {
-        ciUser = context.platform.getSecretValue(NEXUS_CI_USER_SECRET, "username")
-        ciUserPassword = context.platform.getSecretValue(NEXUS_CI_USER_SECRET, "password")
+        def secretDataJson = context.platform.getAsJson("secret", NEXUS_CI_USER_SECRET)["data"]
+        ciUser = DecodeHelper.decodeBase64(secretDataJson["username"])
+        ciUserPassword = DecodeHelper.decodeBase64(secretDataJson["password"])
         host = context.platform.getJsonPathValue("edpcomponent", "docker-registry", ".spec.url")
         proxyHost = context.platform.getJsonPathValue("edpcomponent", "docker-proxy-registry", ".spec.url")
         if (!context.platform.checkObjectExists("secret", PUSH_SECRET)) {

@@ -18,6 +18,7 @@ package com.epam.digital.data.platform.pipelines.registrycomponents.regular
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import groovy.json.JsonSlurperClassic
+import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
 
 class Redash {
     private final BuildContext context
@@ -33,6 +34,8 @@ class Redash {
     public String viewerApiKey
     public String adminApiKey
 
+    LinkedHashMap redashSecretJson
+
     Redash(BuildContext context) {
         this.context = context
     }
@@ -40,8 +43,9 @@ class Redash {
     void init() {
         viewerUrl = "https://${context.platform.getJsonPathValue("route", "redash-viewer", ".spec.host")}"
         adminUrl = "https://${context.platform.getJsonPathValue("route", "redash-admin", ".spec.host")}"
-        viewerApiKey = context.platform.getSecretValue(REDASH_API_KEY_SECRET, VIEWER_KEY_JSON_PATH)
-        adminApiKey = context.platform.getSecretValue(REDASH_API_KEY_SECRET, ADMIN_KEY_JSON_PATH)
+        redashSecretJson = context.platform.getAsJson("secret", REDASH_API_KEY_SECRET)["data"]
+        viewerApiKey = DecodeHelper.decodeBase64(redashSecretJson[VIEWER_KEY_JSON_PATH])
+        adminApiKey = DecodeHelper.decodeBase64(redashSecretJson[ADMIN_KEY_JSON_PATH])
         context.script.retry(5) {
             initApiKeys()
         }

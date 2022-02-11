@@ -22,6 +22,8 @@ import com.epam.digital.data.platform.pipelines.registrycomponents.regular.FormM
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
+import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
+
 
 @Stage(name = "delete-registry", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class DeleteRegistry {
@@ -30,23 +32,34 @@ class DeleteRegistry {
     private String CLEANUP_REGISTRY_SQL = "CleanupRegistry.sql"
     private String CLEANUP_PROCESS_HISTORY_SQL = "CleanupProcessHistory.sql"
 
+    LinkedHashMap formProviderSecretJson
+    LinkedHashMap formModelerSecretJson
+
     void run() {
+
+        formProviderSecretJson = context.platform.getAsJson("secret", FormManagement.PROVIDER_DB_SECRET)["data"]
+        formModelerSecretJson = context.platform.getAsJson("secret", FormManagement.MODELER_DB_SECRET)["data"]
+
         LinkedHashMap parallelDeletion = [:]
         parallelDeletion["cleanFormManagementDB"] = {
             try {
                 context.logger.info("Cleaning form provider DB")
                 cleanFormManagementDB(FormManagement.PROVIDER_DEPLOYMENT_NAME, FormManagement.PROVIDER_DB_POD,
-                        FormManagement.PROVIDER_DB_NAME, FormManagement.PROVIDER_DB_SECRET, FormManagement.PROVIDER_DB_CONTAINER)
+                        FormManagement.PROVIDER_DB_NAME, DecodeHelper.decodeBase64(formProviderSecretJson["user"]),
+                        DecodeHelper.decodeBase64(formProviderSecretJson["password"]),
+                        FormManagement.PROVIDER_DB_CONTAINER)
 
                 context.logger.info("Cleaning form modeler DB")
                 cleanFormManagementDB(FormManagement.MODELER_DEPLOYMENT_NAME, FormManagement.MODELER_DB_POD,
-                        FormManagement.MODELER_DB_NAME, FormManagement.MODELER_DB_SECRET, FormManagement.MODELER_DB_CONTAINER)
+                        FormManagement.MODELER_DB_NAME, DecodeHelper.decodeBase64(formModelerSecretJson["user"]),
+                        DecodeHelper.decodeBase64(formModelerSecretJson["password"]),
+                        FormManagement.MODELER_DB_CONTAINER)
 
             } catch (any) {
                 context.logger.warn("There was an error during form management databases cleanup")
             }
         }
-        parallelDeletion["cleanCitusProviderDB"] = {
+        parallelDeletion["cleanCitusDB"] = {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 0)
             Map binding = ["OWNER_ROLE": context.citus.ownerRole]
@@ -75,13 +88,8 @@ class DeleteRegistry {
             context.logger.info("Removing Redash objects")
             LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
             officerUsersYaml["roles"].each { String role ->
-                try {
-                    context.citus.psqlCommand(context.citus.masterRepPod,
-                            "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name)
-                }
-                catch (any) {
-                    context.logger.info("Removing of Redash roles failed. Possibly, there are no Redash roles in database.")
-                }
+                context.citus.psqlCommand(context.citus.masterRepPod,
+                        "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name)
             }
             context.platform.podExec("redash-viewer-postgresql-0",
                     "bash -c \'export PGPASSWORD=${context.platform.getSecretValue("redash-chart-postgresql", "postgresql-password")}; psql redash -U redash -c \"DELETE FROM events WHERE id > 1; DELETE FROM users WHERE id > 1;\"\'", "")
@@ -92,12 +100,13 @@ class DeleteRegistry {
         context.script.parallel(parallelDeletion)
     }
 
-    void cleanFormManagementDB(String deploymentName, String dbPodName, String dbName, String dbSecretName, String dbContainerName) {
+    void cleanFormManagementDB(String deploymentName, String dbPodName, String dbName,
+                               String dbUser, String dbPass, String dbContainerName) {
         context.platform.scale("deployment/$deploymentName", 0)
         context.platform.podExec(dbPodName, "mongo $dbName " +
                 "--authenticationDatabase ${FormManagement.AUTH_DATABASE} " +
-                "-u ${context.platform.getSecretValue(dbSecretName, "username")} " +
-                "-p ${context.platform.getSecretValue(dbSecretName, "password")} " +
+                "-u $dbUser " +
+                "-p $dbPass " +
                 "--eval \"db.dropDatabase()\"", dbContainerName)
         context.platform.scale("deployment/$deploymentName", 1)
     }

@@ -64,7 +64,7 @@ class CreateRedashRoles {
             context.logger.info("Role(s) has been successfully created")
         }
         catch (any) {
-            context.logger.warn("Role(s) creation failed")
+            context.script.error("Role(s) creation failed")
         }
     }
 }

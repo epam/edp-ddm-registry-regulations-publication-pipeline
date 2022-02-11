@@ -20,6 +20,7 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.platform.Openshift
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
+import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.tools.Logger
 import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
@@ -42,6 +43,15 @@ class CodebaseTests extends BasePipelineTest {
 
             if (cmd.get("script").contains(".spec.defaultBranch"))
                 return "master"
+
+            if (cmd.get("script").contains("-ojson"))
+                return "{\"metadata\": {\"name\": \"registry-regulations\"}, \"spec\": " +
+                        "{\"buildTool\": \"none\", \"ciTool\": \"Jenkins\", \"commitMessagePattern\": null, " +
+                        "\"defaultBranch\": \"master\", \"deploymentScript\": \"\", \"description\": null, " +
+                        "\"emptyProject\": false, \"framework\": null, \"gitServer\": \"gerrit\", \"gitUrlPath\": null, " +
+                        "\"jenkinsSlave\": \"dataplatform-jenkins-agent\", \"jiraIssueMetadataPayload\": null, " +
+                        "\"jobProvisioning\": \"registry\", \"lang\": \"groovy-pipeline\", \"perf\": null, " +
+                        "\"repository\": {\"url\": \"https://gerrit/registry-regulations\"}, \"type\": \"library\"}}\n"
         })
 
         context = new BuildContext(script)
@@ -57,9 +67,11 @@ class CodebaseTests extends BasePipelineTest {
 
     @Test
     void getImageTag() throws Exception {
-        assertEquals("latest", codebase.getImageTag())
-        String customTag = "1.0.0-SNAPSHOT"
-        codebase.setImageTag(customTag)
-        assertEquals(customTag, codebase.getImageTag())
+        if (codebase.type == ProjectType.APPLICATION.getValue()) {
+            assertEquals("latest", codebase.getImageTag())
+            String customTag = "1.0.0-SNAPSHOT"
+            codebase.setImageTag(customTag)
+            assertEquals(customTag, codebase.getImageTag())
+        }
     }
 }
