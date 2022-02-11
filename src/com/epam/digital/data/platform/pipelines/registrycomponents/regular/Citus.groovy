@@ -86,11 +86,11 @@ class Citus {
                 "-o jsonpath=\"{.items[*].metadata.name}\"").tokenize()
     }
 
-    void psqlCommand(String pod, String command, String database = "") {
+    String psqlCommand(String pod, String command, String database = "") {
         try {
             context.platform.podExec(pod, "psql ${database} -U ${user} -t -c \"${command}\"")
         } catch (any) {
-            context.logger.warn("Failed to execute command ${command} on ${pod}")
+            context.script.error("Failed to execute command ${command} on ${pod}")
         }
     }
 

@@ -83,14 +83,24 @@ class DeleteRegistry {
 
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
-        }
-        parallelDeletion["removeRedashUsers"] = {
-            context.logger.info("Removing Redash objects")
+
+            context.logger.info("Removing analytics roles from db")
             LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
             officerUsersYaml["roles"].each { String role ->
-                context.citus.psqlCommand(context.citus.masterRepPod,
-                        "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name)
+                try {
+                    context.citus.psqlCommand(context.citus.masterRepPod,
+                            "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name)
+                } catch (any) {
+                    if (context.citus.psqlCommand(context.citus.masterRepPod,
+                            "SELECT 1 FROM pg_roles WHERE rolname='analytics_${role["name"]}';",
+                            context.registry.name).trim() == '1') {
+                        context.script.error("Removing of analytic role $role from database $context.registry.name FAILED")
+                    }
+                }
             }
+        }
+        parallelDeletion["removeRedashResources"] = {
+            context.logger.info("Removing Redash resources")
             context.platform.podExec("redash-viewer-postgresql-0",
                     "bash -c \'export PGPASSWORD=${context.platform.getSecretValue("redash-chart-postgresql", "postgresql-password")}; psql redash -U redash -c \"DELETE FROM events WHERE id > 1; DELETE FROM users WHERE id > 1;\"\'", "")
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",
