@@ -51,7 +51,9 @@ class CreateExcerptorJob {
                 'data.requestBucketName' : context.platform.getJsonPathValue(Ceph.OBJECT_BUCKET_CLAIM_API,
                         "lowcode-form-data-storage", ".spec.bucketName"),
                 'data.historicBucketName': context.platform.getJsonPathValue(Ceph.OBJECT_BUCKET_CLAIM_API,
-                        "datafactory-ceph-bucket", ".spec.bucketName")
+                        "datafactory-ceph-bucket", ".spec.bucketName"),
+                'edpProject'             : context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
+                        ".data.edpProject")
         ]
 
         context.script.writeFile file: JOB_YAML, text: Helm.template(context, "job", DEPLOY_TEMPLATES_PATH,
