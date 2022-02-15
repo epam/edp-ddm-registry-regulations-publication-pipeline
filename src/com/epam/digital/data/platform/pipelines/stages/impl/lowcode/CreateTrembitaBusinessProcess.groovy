@@ -78,7 +78,8 @@ class CreateTrembitaBusinessProcess {
                     "registryToken"          : trembitaMapPath["authorization-token"],
                     "registrySubsystemCode"  : trembitaMapPath["service"]["subsystem-code"],
                     "clientMemberClass"      : trembitaMapPath["client"]["member-class"],
-                    "cdname"                 : "${cdPipelineName}-${cdPipelineStageName}"
+                    "cdname"                 : "${cdPipelineName}-${cdPipelineStageName}",
+                    "dnsWildcard"            : context.dnsWildcard
             ]
             String destination = "trembita-configuration.yaml"
             context.script.writeFile(file: destination, text: TemplateRenderer.renderTemplate(template, binding))

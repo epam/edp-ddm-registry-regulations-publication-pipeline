@@ -39,7 +39,7 @@ spec:
           trembitaUrl: ${trembitaUrl}
           legalDefaultRoles: citizen;unregistered-legal;
           registryToken: ${registryToken}
-          startPageUrl: https://citizen-portal-${cdname}.apps.cicd2.mdtu-ddm.projects.epam.com/login
+          startPageUrl: https://citizen-portal-${cdname}.${dnsWildcard}/login
           registrySubsystemCode: '${registrySubsystemCode}'
       authenticatorFlow: false
       priority: 1
