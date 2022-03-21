@@ -41,14 +41,21 @@ class CleanUpTrigger {
                 context.logger.info("Removing ${context.codebase.name} repo")
                 context.gitServer.deleteRepository(context.codebase.name)
             }
+            parallelDeletion["removeHistoryExcerptor"] = {
+                context.logger.info("Removing history-excerptor codebasebranch codebase CR")
+                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, context.codebase.historyName)
+                context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
+            }
             context.script.parallel(parallelDeletion)
 
-            String tmpGerritSecret = "repository-codebase-${context.codebase.name}-temp"
-            if (!context.platform.checkObjectExists("secret", tmpGerritSecret)) {
-                String edpGerritSecret = "edp-gerrit-ciuser"
-                context.platform.create("secret generic", tmpGerritSecret,
-                        "--from-literal='username=${context.platform.getSecretValue(edpGerritSecret, "username")}' " +
-                                "--from-literal='password=${context.platform.getSecretValue(edpGerritSecret, "password")}'")
+            [context.codebase.name, context.codebase.historyName].each {
+                String tmpGerritSecret = "repository-codebase-${it}-temp"
+                if (!context.platform.checkObjectExists("secret", tmpGerritSecret)) {
+                    String edpGerritSecret = "edp-gerrit-ciuser"
+                    context.platform.create("secret generic", tmpGerritSecret,
+                            "--from-literal='username=${context.platform.getSecretValue(edpGerritSecret, "username")}' " +
+                                    "--from-literal='password=${context.platform.getSecretValue(edpGerritSecret, "password")}'")
+                }
             }
 
             context.logger.info("Creating ${context.codebase.name} codebase and codebasebranch CRs")
@@ -72,6 +79,18 @@ class CleanUpTrigger {
                 String dest = "${context.codebase.name}-${it}.yaml"
                 String template = context.script.libraryResource("${context.YAML_RESOURCES_RELATIVE_PATH}" +
                         "/${it}/${context.codebase.name}.yaml")
+                context.script.writeFile(file: dest, text: TemplateRenderer.renderTemplate(template, binding))
+                context.platform.apply(dest)
+            }
+
+            context.logger.info("Creating ${context.codebase.historyName} codebase and codebasebranch CRs")
+            ["codebase", "codebasebranch"].each {
+                Map binding = [
+                        "repoUrl": context.codebase.sourceHistoryRepository
+                ]
+                String dest = "${context.codebase.historyName}-${it}.yaml"
+                String template = context.script.libraryResource("${context.YAML_RESOURCES_RELATIVE_PATH}" +
+                        "/${it}/${context.codebase.historyName}.yaml")
                 context.script.writeFile(file: dest, text: TemplateRenderer.renderTemplate(template, binding))
                 context.platform.apply(dest)
             }
