@@ -32,7 +32,6 @@ class Codebase {
     private String imageTag
 
     public String name
-    public String historyName
     public String branch
     public String defaultBranch
     public String imageUrl
@@ -44,10 +43,8 @@ class Codebase {
     public String buildToolSpec
     public IBuildTool buildTool
     public String sourceRepository
-    public String sourceHistoryRepository
 
     LinkedHashMap codebaseJson
-    LinkedHashMap codebaseHistoryJson
 
     Codebase(BuildContext context) {
         this.context = context
@@ -70,17 +67,12 @@ class Codebase {
     void init() {
         this.name = context.getParameterValue("CODEBASE_NAME", "registry")
         this.codebaseJson = context.platform.getAsJson("codebase", this.name)["spec"]
-        this.historyName = context.getParameterValue("CODEBASE_HISTORY_NAME", "history-excerptor")
-        this.codebaseHistoryJson = context.platform.getAsJson("codebase", this.historyName)["spec"]
         this.defaultBranch = this.codebaseJson["defaultBranch"]
         this.branch = context.getParameterValue("CODEBASE_BRANCH", this.defaultBranch).toLowerCase()
         this.repositoryPath = context.getParameterValue("REPOSITORY_PATH")
         this.jobProvisioner = this.codebaseJson["jobProvisioning"]
         if (codebaseJson["repository"]) {
             this.sourceRepository = this.codebaseJson["repository"]["url"]
-        }
-        if (codebaseHistoryJson["repository"]) {
-            this.sourceHistoryRepository = this.codebaseHistoryJson["repository"]["url"]
         }
         this.type = this.codebaseJson["type"].toLowerCase()
         if (type == ProjectType.APPLICATION.getValue()) {
