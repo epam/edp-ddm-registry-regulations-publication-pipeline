@@ -70,14 +70,14 @@ class Redash {
 
         if (adminResponse.getStatus() == 404) {
             context.logger.info("Redash admin api key is no more valid or not yet initialised")
-            patchRedashSecret(adminUrl, REDASH_SETUP_SECRET, ADMIN_KEY_JSON_PATH)
+            adminApiKey = DecodeHelper.decodeBase64(patchRedashSecret(adminUrl, REDASH_SETUP_SECRET, ADMIN_KEY_JSON_PATH))
             isKeysRegenerated = true
         } else {
             context.logger.info("Redash api key secret is up to date for admin")
         }
         if (viewerResponse.getStatus() == 404) {
             context.logger.info("Redash viewer api key is no more valid or not yet initialised")
-            patchRedashSecret(viewerUrl, REDASH_SETUP_SECRET, VIEWER_KEY_JSON_PATH)
+            viewerApiKey = DecodeHelper.decodeBase64(patchRedashSecret(viewerUrl, REDASH_SETUP_SECRET, VIEWER_KEY_JSON_PATH))
             isKeysRegenerated = true
         } else {
             context.logger.info("Redash api key secret is up to date for viewer")
@@ -127,10 +127,12 @@ class Redash {
         context.platform.scale(redashExporterDeployment, 1)
     }
 
-    void patchRedashSecret(String url, String secretName, String keyJsonPath) {
+    def patchRedashSecret(String url, String secretName, String keyJsonPath) {
         String initialPassword = context.platform.getSecretValue(secretName, "password")
+        def newApiKey = regenerateApiKey(url, initialPassword)
         context.platform.patch("secret", REDASH_API_KEY_SECRET, "\'{\"data\": {\"${keyJsonPath}\": " +
-                "\"${regenerateApiKey(url, initialPassword)}\"}}\'")
+                "\"${newApiKey}\"}}\'")
+        return newApiKey
     }
     void deleteRedashResource(String url, String apiKey) {
         def response = context.script.httpRequest url: "${url}",
