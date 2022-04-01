@@ -59,6 +59,10 @@ class CreateTrembitaBusinessProcess {
                     ".data.cdPipelineName")
             String cdPipelineStageName = context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
                     ".data.cdPipelineStageName")
+            String signWidgetUrl = context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
+                    ".data.signWidgetUrl")
+            String digitalSignatureOpsUrl = context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
+                    ".data.digitalSignatureOpsUrl")
             LinkedHashMap trembitaYaml = context.script.readYaml file: "bp-trembita/configuration.yml"
             context.logger.info("Creating configuration from configuration.yml")
             String template = context.script.libraryResource("${context.YAML_RESOURCES_RELATIVE_PATH}" +
@@ -79,7 +83,9 @@ class CreateTrembitaBusinessProcess {
                     "registrySubsystemCode"  : trembitaMapPath["service"]["subsystem-code"],
                     "clientMemberClass"      : trembitaMapPath["client"]["member-class"],
                     "cdname"                 : "${cdPipelineName}-${cdPipelineStageName}",
-                    "dnsWildcard"            : context.dnsWildcard
+                    "dnsWildcard"            : context.dnsWildcard,
+                    "widgetUrl"              : "${signWidgetUrl}",
+                    "dsoUrl"                 : "${digitalSignatureOpsUrl}"
             ]
             String destination = "trembita-configuration.yaml"
             context.script.writeFile(file: destination, text: TemplateRenderer.renderTemplate(template, binding))

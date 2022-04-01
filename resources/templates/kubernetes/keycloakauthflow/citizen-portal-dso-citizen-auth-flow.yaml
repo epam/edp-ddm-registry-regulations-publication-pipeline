@@ -28,8 +28,8 @@ spec:
           registryMemberCode: '${registryMemberCode}'
           trembitaProtocolVersion: '${trembitaProtocolVersion}'
           esignHintUrl: https://diia.gov.ua/faq/1
-          widgetUrl: 'https://eu.iit.com.ua/sign-widget/v20200922/'
-          dsoUrl: 'http://digital-signature-ops:8080/api/esignature/owner'
+          widgetUrl: '${widgetUrl}'
+          dsoUrl: '${dsoUrl}'
           registryXRoadInstance: ${registryXRoadInstance}
           clientSubsystemCode: '${clientSubsystemCode}'
           clientMemberCode: '${clientMemberCode}'
