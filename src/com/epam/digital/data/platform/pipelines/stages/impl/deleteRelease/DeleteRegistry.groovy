@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.deleteRelease
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.BusinessProcMgmtSys
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.FormManagement
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
-import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
-
 
 @Stage(name = "delete-registry", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class DeleteRegistry {

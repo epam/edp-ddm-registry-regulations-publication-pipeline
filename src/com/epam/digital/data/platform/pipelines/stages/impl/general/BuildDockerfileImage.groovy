@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class BuildDockerfileImage {
         context.logger.debug("Version from pom.xml: ${version}")
 
         String repoChecksum = context.script.sh(script: "find . -type f -not -path '*/\\.git/*' -exec md5sum {} \\; " +
-                "| sort | md5sum", returnStdout: true).replaceAll('-','').trim()
+                "| sort | md5sum", returnStdout: true).replaceAll('-', '').trim()
         String agentVersion = context.script.env.AGENT_IMAGE_VERSION
         context.codebase.setImageName("$context.codebase.imageName-$repoChecksum-${agentVersion.toLowerCase()}")
 

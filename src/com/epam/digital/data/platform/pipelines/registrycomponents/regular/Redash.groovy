@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.epam.digital.data.platform.pipelines.registrycomponents.regular
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import groovy.json.JsonSlurperClassic
 import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
+import groovy.json.JsonSlurperClassic
 
 class Redash {
     private final BuildContext context
@@ -134,6 +134,7 @@ class Redash {
                 "\"${newApiKey}\"}}\'")
         return newApiKey
     }
+
     void deleteRedashResource(String url, String apiKey) {
         def response = context.script.httpRequest url: "${url}",
                 httpMode: "GET",

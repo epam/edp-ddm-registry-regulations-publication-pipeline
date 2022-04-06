@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,16 +40,16 @@ class DeployProjects {
                 parallelDeployment["${dataComponent.name}"] = {
                     context.logger.info("Deploying ${dataComponent.name}")
                     LinkedHashMap<String, String> parametersMap = [
-                            'namespace'                           : context.namespace,
-                            'ciProject'                           : context.namespace,
-                            'dnsWildcard'                         : context.dnsWildcard,
-                            'image.name'                          : context.platform.getJsonPathValue("buildconfig",
-                                    ("${dataComponent.codebaseName}-${dataComponent.codebaseBranch}").replace('.','-'),
+                            'namespace'          : context.namespace,
+                            'ciProject'          : context.namespace,
+                            'dnsWildcard'        : context.dnsWildcard,
+                            'image.name'         : context.platform.getJsonPathValue("buildconfig",
+                                    ("${dataComponent.codebaseName}-${dataComponent.codebaseBranch}").replace('.', '-'),
                                     ".spec.output.to.name").toString().split(':')[0],
-                            'image.version'                       : context.registry.version,
-                            'dockerProxyRegistry'                 : context.dockerRegistry.proxyHost,
-                            'version'                             : context.registry.version,
-                            'keycloak.url'                        : context.keycloak.url
+                            'image.version'      : context.registry.version,
+                            'dockerProxyRegistry': context.dockerRegistry.proxyHost,
+                            'version'            : context.registry.version,
+                            'keycloak.url'       : context.keycloak.url
                     ]
                     LinkedHashMap platformValuesPath = context.script.readYaml file: "${context.getWorkDir()}" +
                             "/platform-values.yaml"

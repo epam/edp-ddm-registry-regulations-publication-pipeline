@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,7 @@ class RegistryRegulations {
         return allRegulations
     }
 
-    String getRegistryConfValues()
-    {
+    String getRegistryConfValues() {
         String platformValuesPath = "${context.getWorkDir()}/platform-values.yaml"
         context.script.sh(script: "helm get values registry-configuration > ${platformValuesPath}")
         return platformValuesPath

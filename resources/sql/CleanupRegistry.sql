@@ -1,4 +1,3 @@
-
 drop database if exists camunda with (force);
 
 
@@ -27,7 +26,9 @@ truncate table only ddm_source_business_process;
 truncate table only ddm_source_system;
 
 -- clean table ddm_db_changelog from registry changeset's info
-delete from ddm_db_changelog where author <> 'platform';
+delete
+from ddm_db_changelog
+where author <> 'platform';
 
 -- create schema registry
 create schema if not exists registry;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ class UploadFormChanges {
             context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/form",
                     httpMode: 'POST',
                     requestBody: content,
-                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"], 
+                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"],
                                     [maskValue: true, name: 'X-Access-Token', value: token]],
                     wrapAsMultipart: false,
                     consoleLogResponseBody: context.logLevel == "DEBUG",
@@ -85,7 +85,7 @@ class UploadFormChanges {
             context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/${formName}",
                     httpMode: 'PUT',
                     requestBody: content,
-                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"], 
+                    customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"],
                                     [maskValue: true, name: 'X-Access-Token', value: token]],
                     wrapAsMultipart: false,
                     consoleLogResponseBody: context.logLevel == "DEBUG",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ class UpdateThemeLoginPage {
             String themeFile = context.script.readYaml(file: GLOBAL_VARS_FILE)["themeFile"]
             if (themeFile) {
                 ["officer", "citizen"].each {
-                String authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", "-o yaml")
-                String tmpFile = "tmp-${it}.yml"
-                context.script.writeFile(file: tmpFile, text: authFlowYaml)
-                context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
-                context.platform.apply(tmpFile)
+                    String authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", "-o yaml")
+                    String tmpFile = "tmp-${it}.yml"
+                    context.script.writeFile(file: tmpFile, text: authFlowYaml)
+                    context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
+                    context.platform.apply(tmpFile)
                 }
             } else {
                 context.logger.info("Theme file is not set, using default")

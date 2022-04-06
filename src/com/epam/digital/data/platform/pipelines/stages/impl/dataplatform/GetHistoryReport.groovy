@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems.
+ * Copyright 2022 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.dataplatform
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
+import com.epam.digital.data.platform.pipelines.stages.Stage
 
 @Stage(name = "get-history-report", buildTool = "any", type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class GetHistoryReport {
