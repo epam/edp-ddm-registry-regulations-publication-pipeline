@@ -104,6 +104,41 @@ class DeleteRegistry {
                     context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
         }
+        parallelDeletion["removeKafkaTopics"] = {
+            String kafkaBrokerPod = "kafka-cluster-kafka-0"
+            String kafkaBootstrapServer = "kafka-cluster-kafka-bootstrap:9092"
+            def kafkaTopicList
+            int attempt = 0
+            int maxAttempts = 10
+            Boolean kafkaTopicsRemoved = false
+            while (!kafkaTopicsRemoved) {
+                attempt++
+                if (attempt > maxAttempts) {
+                    context.script.error("Attempts limit is reached and kafka topics were not removed yet!")
+                    kafkaTopicsRemoved = true
+                }
+                String kafkaTopics = ''
+                kafkaTopicList = context.script.sh(script: "oc exec $kafkaBrokerPod -c kafka -- bin/kafka-topics.sh " +
+                        "--list --bootstrap-server $kafkaBootstrapServer", returnStdout: true).tokenize()
+                kafkaTopicList.each { kafkaTopic ->
+                    if (kafkaTopic.matches(".*\\d.*") && (kafkaTopic.contains("inbound") || kafkaTopic.contains("outbound"))) {
+                        kafkaTopics = kafkaTopics + "$kafkaTopic,"
+                    }
+                }
+                if (kafkaTopics.length() > 1) {
+                    try {
+                        context.script.sh(script: "oc exec $kafkaBrokerPod -c kafka -- bin/kafka-topics.sh " +
+                                "--bootstrap-server $kafkaBootstrapServer --delete --topic ${kafkaTopics.substring(0, kafkaTopics.length() - 1)}")
+                    } catch (any) {
+                        kafkaTopicsRemoved = false
+                        context.logger.info("Removing of kafka topics failed. Retrying (attempt $attempt/10)")
+                    }
+                } else {
+                    kafkaTopicsRemoved = true
+                }
+            }
+            context.logger.info("Kafka topics were successfully removed.")
+        }
         context.script.parallel(parallelDeletion)
     }
 
