@@ -49,13 +49,6 @@ class DeleteRegistry {
                         FormManagement.PROVIDER_DB_NAME, DecodeHelper.decodeBase64(formProviderSecretJson["user"]),
                         DecodeHelper.decodeBase64(formProviderSecretJson["password"]),
                         FormManagement.PROVIDER_DB_CONTAINER)
-
-                context.logger.info("Cleaning form modeler DB")
-                cleanFormManagementDB(FormManagement.MODELER_DEPLOYMENT_NAME, FormManagement.MODELER_DB_POD,
-                        FormManagement.MODELER_DB_NAME, DecodeHelper.decodeBase64(formModelerSecretJson["user"]),
-                        DecodeHelper.decodeBase64(formModelerSecretJson["password"]),
-                        FormManagement.MODELER_DB_CONTAINER)
-
             } catch (any) {
                 context.logger.warn("There was an error during form management databases cleanup")
             }
