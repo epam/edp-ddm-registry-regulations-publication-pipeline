@@ -34,14 +34,14 @@ class RegistryRegulationsValidation {
         try {
             context.script.sh(script: "java -jar ${DATA_VALIDATOR_JAR} ${context.logLevel == "DEBUG" ? "1>&2" : ""}")
             context.script.sh(script: "java -jar ${LOWCODE_VALIDATOR_JAR} " +
-                    "--bp-auth-files=${context.registryRegulations.filesToDeploy.get(RegulationType.BUSINESS_PROCESS_AUTH).join(",")} " +
+                    "--bp-auth-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS_AUTH).join(",")} " +
                     "--bp-trembita-files=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.EXTERNAL_SYSTEM.getValue()} " +
                     "--bp-trembita-config=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.CONFIG.getValue()} " +
-                    "--bpmn-files=${context.registryRegulations.filesToDeploy.get(RegulationType.BUSINESS_PROCESS).join(",")} " +
-                    "--dmn-files=${context.registryRegulations.filesToDeploy.get(RegulationType.BUSINESS_RULE).join(",")} " +
-                    "--form-files=${context.registryRegulations.filesToDeploy.get(RegulationType.UI_FORM).join(",")} " +
-                    "--global-vars-files=${context.registryRegulations.filesToDeploy.get(RegulationType.GLOBAL_VARS).join(",")} " +
-                    "--roles-files=${context.registryRegulations.filesToDeploy.get(RegulationType.ROLES).join(",")} " +
+                    "--bpmn-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS).join(",")} " +
+                    "--dmn-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_RULE).join(",")} " +
+                    "--form-files=${context.registryRegulations.getAllRegulations(RegulationType.UI_FORM).join(",")} " +
+                    "--global-vars-files=${context.registryRegulations.getAllRegulations(RegulationType.GLOBAL_VARS).join(",")} " +
+                    "--roles-files=${context.registryRegulations.getAllRegulations(RegulationType.ROLES).join(",")} " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
         }
         catch (any) {
