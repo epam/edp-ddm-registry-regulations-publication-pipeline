@@ -27,12 +27,10 @@ class RegistryRegulationsValidation {
     BuildContext context
 
     private final String LOWCODE_VALIDATOR_JAR = "/home/jenkins/registry-regulations-validator-cli/registry-regulations-validator-cli.jar"
-    private final String DATA_VALIDATOR_JAR = "/home/jenkins/registry-regulations-validator/registry-regulations-validator.jar"
 
     void run() {
         context.logger.info("Registry regulations files validation")
         try {
-            context.script.sh(script: "java -jar ${DATA_VALIDATOR_JAR} ${context.logLevel == "DEBUG" ? "1>&2" : ""}")
             context.script.sh(script: "java -jar ${LOWCODE_VALIDATOR_JAR} " +
                     "--bp-auth-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS_AUTH).join(",")} " +
                     "--bp-trembita-files=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.EXTERNAL_SYSTEM.getValue()} " +
@@ -42,6 +40,8 @@ class RegistryRegulationsValidation {
                     "--form-files=${context.registryRegulations.getAllRegulations(RegulationType.UI_FORM).join(",")} " +
                     "--global-vars-files=${context.registryRegulations.getAllRegulations(RegulationType.GLOBAL_VARS).join(",")} " +
                     "--roles-files=${context.registryRegulations.getAllRegulations(RegulationType.ROLES).join(",")} " +
+                    "--liquibase-files=data-model/main-liquibase.xml " +
+                    "--settings-files=${context.registry.SETTINGS_FILE} " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
         }
         catch (any) {
