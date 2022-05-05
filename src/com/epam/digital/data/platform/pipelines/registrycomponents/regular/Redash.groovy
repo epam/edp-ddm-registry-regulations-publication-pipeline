@@ -41,8 +41,8 @@ class Redash {
     }
 
     void init() {
-        viewerUrl = "https://${context.platform.getJsonPathValue("route", "redash-viewer", ".spec.host")}"
-        adminUrl = "https://${context.platform.getJsonPathValue("route", "redash-admin", ".spec.host")}"
+        viewerUrl = "http://redash-viewer"
+        adminUrl = "http://redash-admin"
         redashSecretJson = context.platform.getAsJson("secret", REDASH_API_KEY_SECRET)["data"]
         viewerApiKey = DecodeHelper.decodeBase64(redashSecretJson[VIEWER_KEY_JSON_PATH])
         adminApiKey = DecodeHelper.decodeBase64(redashSecretJson[ADMIN_KEY_JSON_PATH])
