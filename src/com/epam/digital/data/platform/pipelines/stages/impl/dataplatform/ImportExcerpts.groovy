@@ -49,7 +49,7 @@ class ImportExcerpts {
                         "-DCEPH_ACCESS_KEY=${excerptBucket.cephAccessKey} " +
                         "-DCEPH_SECRET_KEY=${excerptBucket.cephSecretKey} " +
                         "${EXCERPTS_IMPORTER_JAR} " +
-                        "--excerpts --excerpts-docx" +
+                        "--excerpts --excerpts-docx --excerpts-csv " +
                         "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
                 context.logger.info("Excerpts have been successfully imported")
             } catch (any) {

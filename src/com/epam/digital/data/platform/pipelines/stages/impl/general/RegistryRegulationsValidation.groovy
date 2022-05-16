@@ -42,6 +42,7 @@ class RegistryRegulationsValidation {
                     "--roles-files=${context.registryRegulations.getAllRegulations(RegulationType.ROLES).join(",")} " +
                     "--liquibase-files=data-model/main-liquibase.xml " +
                     "--settings-files=${context.registry.SETTINGS_FILE} " +
+                    "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
         }
         catch (any) {
