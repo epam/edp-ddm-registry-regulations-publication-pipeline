@@ -17,7 +17,6 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.deleteRelease
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.tools.Helm
@@ -32,7 +31,7 @@ class DeleteServices {
                 context.namespace, true)
 
         context.logger.info("Removing ${context.codebase.name} repo")
-        context.platform.deleteObject(Gerrit.GERRIT_PROJECT_CR, "gerrit-${context.codebase.name.replaceAll("\\.","-")}")
+        context.gitServer.deleteRepository(context.codebase.name)
 
         context.logger.info("Removing data components buildconfigs")
         if (context.platform.checkObjectExists("buildconfig", context.codebase.buildConfigName)) {

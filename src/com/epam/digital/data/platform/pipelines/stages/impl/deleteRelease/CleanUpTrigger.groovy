@@ -18,7 +18,6 @@ package com.epam.digital.data.platform.pipelines.stages.impl.deleteRelease
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
-import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
@@ -31,22 +30,23 @@ class CleanUpTrigger {
         context.script.timeout(unit: 'MINUTES', time: 10) {
             LinkedHashMap parallelDeletion = [:]
             parallelDeletion["removeDataServices"] = {
-                context.logger.info("Removing Data Services codebasebranches/codebases CRs")
+                context.logger.info("Removing Data Services codebasebranches")
                 context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
                 context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
             }
             parallelDeletion["removeRegistryRegulation"] = {
-                context.logger.info("Removing registry-regulations codebasebranch/codebase CRs and gerrit repo")
+                context.logger.info("Removing registry-regulations codebasebranch codebase CR")
                 context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "${context.codebase.name}-${context.codebase.branch}")
                 context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
                 context.logger.info("Removing ${context.codebase.name} repo")
-                context.platform.deleteObject(Gerrit.GERRIT_PROJECT_CR, "gerrit-${context.codebase.name.replaceAll("\\.","-")}")
+                context.gitServer.deleteRepository(context.codebase.name)
             }
             context.script.parallel(parallelDeletion)
 
-            context.logger.info("Removing history-excerptor codebasebranch/codebase CRs")
+            context.logger.info("Removing history-excerptor codebasebranch codebase CR")
             context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, context.codebase.historyName)
             context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
+
 
             [context.codebase.name, context.codebase.historyName].each {
                 String tmpGerritSecret = "repository-codebase-${it}-temp"

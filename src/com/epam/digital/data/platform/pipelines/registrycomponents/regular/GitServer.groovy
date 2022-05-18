@@ -50,6 +50,8 @@ abstract class GitServer {
 
     abstract boolean isRepositoryExists(String repoName)
 
+    abstract boolean deleteRepository(String repoName)
+
 
     @Override
     String toString() {
