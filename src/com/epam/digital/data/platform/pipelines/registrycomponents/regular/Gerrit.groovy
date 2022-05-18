@@ -23,6 +23,9 @@ class Gerrit extends GitServer {
         super(context, name)
     }
 
+    public final static String GERRIT_PROJECT_API_GROUP = "v2.edp.epam.com"
+    public final static String GERRIT_PROJECT_CR = "gerritproject.${GERRIT_PROJECT_API_GROUP}"
+
     @Override
     boolean isRepositoryExists(String repoName) {
         context.logger.debug("Checking if ${repoName} exists")
@@ -37,10 +40,15 @@ class Gerrit extends GitServer {
 
     @Override
     boolean deleteRepository(String repoName) {
-        context.script.sshagent(["${credentialsId}"]) {
-            context.script.sh(script: "ssh -oStrictHostKeyChecking=no " +
-                    "-p ${sshPort} ${autouser}@${host} " +
-                    "delete-project delete --yes-really-delete --force ${repoName}")
+        String gerritProjectCrName = "gerrit-${repoName.replaceAll("\\.", "-")}"
+        if (context.platform.checkObjectExists("gerritproject", gerritProjectCrName)) {
+            context.platform.deleteObject(GERRIT_PROJECT_CR, gerritProjectCrName)
+        } else {
+            context.script.sshagent(["${credentialsId}"]) {
+                context.script.sh(script: "ssh -oStrictHostKeyChecking=no " +
+                        "-p ${sshPort} ${autouser}@${host} " +
+                        "delete-project delete --yes-really-delete --force ${repoName}")
+            }
         }
     }
 }
