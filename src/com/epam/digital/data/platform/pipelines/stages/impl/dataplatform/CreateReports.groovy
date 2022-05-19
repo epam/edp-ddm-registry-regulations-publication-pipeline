@@ -47,7 +47,7 @@ class CreateReports {
                 context.logger.info("Redash ${RegulationType.REPORTS.value} have been successfully published")
             }
             catch (any) {
-                context.logger.warn("Publishing ${RegulationType.REPORTS.value} failed")
+                context.script.error("Publishing ${RegulationType.REPORTS.value} failed")
             }
             context.logger.info("Redash ${RegulationType.REPORTS.value} creation have been finished")
         } else {
