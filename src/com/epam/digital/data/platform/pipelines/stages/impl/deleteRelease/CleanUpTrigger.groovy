@@ -20,7 +20,6 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
-import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
 
 @Stage(name = "cleanup-trigger", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class CleanUpTrigger {
@@ -29,24 +28,30 @@ class CleanUpTrigger {
     void run() {
         context.script.timeout(unit: 'MINUTES', time: 10) {
             LinkedHashMap parallelDeletion = [:]
+
+            context.logger.info("Get current codebase and codebasebranch CRs")
+            getCurrentCodebaseCRs("codebase")
+            getCurrentCodebaseCRs("codebasebranch")
+
             parallelDeletion["removeDataServices"] = {
                 context.logger.info("Removing Data Services codebasebranches")
                 context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
                 context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
             }
             parallelDeletion["removeRegistryRegulation"] = {
-                context.logger.info("Removing registry-regulations codebasebranch codebase CR")
-                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "${context.codebase.name}-${context.codebase.branch}")
+                context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
+                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
                 context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
                 context.logger.info("Removing ${context.codebase.name} repo")
                 context.gitServer.deleteRepository(context.codebase.name)
             }
+
+            parallelDeletion["removeHistoryExcerptor"] = {
+                context.logger.info("Removing history-excerptor codebasebranch and codebase CRs")
+                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.historyName")
+                context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
+            }
             context.script.parallel(parallelDeletion)
-
-            context.logger.info("Removing history-excerptor codebasebranch codebase CR")
-            context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, context.codebase.historyName)
-            context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
-
 
             [context.codebase.name, context.codebase.historyName].each {
                 String tmpGerritSecret = "repository-codebase-${it}-temp"
@@ -60,40 +65,17 @@ class CleanUpTrigger {
 
             context.logger.info("Creating ${context.codebase.name} codebase and codebasebranch CRs")
             ["codebase", "codebasebranch"].each {
-                String emptyRepoUrl = context.codebase.sourceRepository.replaceAll(
-                        context.codebase.sourceRepository.substring(
-                                context.codebase.sourceRepository.lastIndexOf('/') + 1),
-                        "empty-template-registry-regulation")
-                String repoUrl = context.getParameterValue("RECREATE_EMPTY", "true").toBoolean()
-                        ? emptyRepoUrl : context.codebase.sourceRepository
-                Map binding = [
-                        "repoUrl"       : repoUrl,
-                        "codebaseName"  : context.codebase.name,
-                        "branch"        : context.codebase.branch,
-                        "defaultBranch" : context.codebase.branch,
-                        "version"       : context.registry.version,
-                        "buildTool"     : context.codebase.buildToolSpec,
-                        "jenkinsAgent"  : context.codebase.jenkinsAgent,
-                        "jobProvisioner": context.codebase.jobProvisioner
-                ]
-                String dest = "${context.codebase.name}-${it}.yaml"
-                String template = context.script.libraryResource("${context.YAML_RESOURCES_RELATIVE_PATH}" +
-                        "/${it}/${context.codebase.name}.yaml")
-                context.script.writeFile(file: dest, text: TemplateRenderer.renderTemplate(template, binding))
-                context.platform.apply(dest)
-            }
-
-            context.logger.info("Creating ${context.codebase.historyName} codebase and codebasebranch CRs")
-            ["codebase", "codebasebranch"].each {
-                Map binding = [
-                        "repoUrl": context.codebase.sourceHistoryRepository
-                ]
-                String dest = "${context.codebase.historyName}-${it}.yaml"
-                String template = context.script.libraryResource("${context.YAML_RESOURCES_RELATIVE_PATH}" +
-                        "/${it}/${context.codebase.historyName}.yaml")
-                context.script.writeFile(file: dest, text: TemplateRenderer.renderTemplate(template, binding))
-                context.platform.apply(dest)
+                context.platform.apply("${context.codebase.name}-${context.codebase.historyName}-${it}.json")
             }
         }
+    }
+
+    void getCurrentCodebaseCRs(String CrName) {
+        String fileName = "${context.codebase.name}-${context.codebase.historyName}-${CrName}.json"
+        String currentCr = context.script.sh(script: "oc get $CrName -l recreateByCleanup=true -o json | " +
+                "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
+                ".items[].metadata.selfLink,.items[].metadata.ownerReferences,.items[].metadata.creationTimestamp," +
+                ".items[].metadata.generation,.items[].metadata.finalizers)'", returnStdout: true)
+        context.script.writeFile(file: fileName, text: currentCr)
     }
 }
