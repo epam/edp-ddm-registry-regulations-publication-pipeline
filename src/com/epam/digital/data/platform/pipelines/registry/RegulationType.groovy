@@ -26,7 +26,8 @@ enum RegulationType {
     ROLES("roles"),
     BUSINESS_PROCESS_AUTH("bp-auth"),
     BUSINESS_PROCESS_TREMBITA("bp-trembita"),
-    EXCERPTS("excerpts")
+    EXCERPTS("excerpts"),
+    NOTIFICATION_TEMPLATES("notifications")
 
     private String value
 

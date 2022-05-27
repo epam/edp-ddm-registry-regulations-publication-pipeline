@@ -43,6 +43,8 @@ class Citus {
     public String appRole
     public String appRolePass
     public String analyticsAdminRolePass
+    public String notificationPublisherUser
+    public String notificationPublisherPass
 
     public String masterPod
     public String masterRepPod
@@ -75,6 +77,8 @@ class Citus {
         excerptExporterUser = DecodeHelper.decodeBase64(citusSecretRolesJson["excerptExporterName"])
         excerptExporterPass = DecodeHelper.decodeBase64(citusSecretRolesJson["excerptExporterPass"])
         analyticsAdminRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["anAdmPass"])
+        notificationPublisherUser = DecodeHelper.decodeBase64(citusSecretRolesJson["notificationTemplatePublisherName"])
+        notificationPublisherPass = DecodeHelper.decodeBase64(citusSecretRolesJson["notificationTemplatePublisherPass"])
 
         masterPod = context.platform.getAll("pods", "-l app=citus-master " +
                 "-o jsonpath=\"{.items[0].metadata.name}\"")
