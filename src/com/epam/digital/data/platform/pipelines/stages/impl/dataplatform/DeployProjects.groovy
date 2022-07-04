@@ -49,7 +49,8 @@ class DeployProjects {
                             'image.version'      : context.registry.version,
                             'dockerProxyRegistry': context.dockerRegistry.proxyHost,
                             'version'            : context.registry.version,
-                            'keycloak.url'       : context.keycloak.url
+                            'keycloak.url'       : context.keycloak.url,
+                            'deployProfile'      : context.registryRegulations.getRegistryConfValues(true)
                     ]
                     LinkedHashMap platformValuesPath = context.script.readYaml file: "${context.getWorkDir()}" +
                             "/platform-values.yaml"

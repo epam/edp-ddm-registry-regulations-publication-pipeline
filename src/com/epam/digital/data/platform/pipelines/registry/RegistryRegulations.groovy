@@ -65,9 +65,14 @@ class RegistryRegulations {
         return allRegulations
     }
 
-    String getRegistryConfValues() {
-        String platformValuesPath = "${context.getWorkDir()}/platform-values.yaml"
-        context.script.sh(script: "helm get values registry-configuration > ${platformValuesPath}")
-        return platformValuesPath
+    String getRegistryConfValues(boolean getProfileValue = false) {
+        if (getProfileValue) {
+            return context.script.sh(script: "helm get values registry-configuration | grep 'deployProfile:' " +
+                    "| awk '{print \$2}'", returnStdout: true).trim()
+        } else {
+            String platformValuesPath = "${context.getWorkDir()}/platform-values.yaml"
+            context.script.sh(script: "helm get values registry-configuration > ${platformValuesPath}")
+            return platformValuesPath
+        }
     }
 }
