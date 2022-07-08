@@ -95,11 +95,13 @@ class Redash {
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "302"
-        String cookie = loginResponse.getHeaders()
+        ArrayList cookies = loginResponse.getHeaders()
                 .get("Set-Cookie")
                 .toString()
                 .replace("[", "")
                 .replace("]", "")
+                .split("Path=/, ")
+        String cookie = cookies.find { it.contains("session") }
 
         if (!cookie)
             context.script.error "Failed to get redash login cookie"
@@ -142,22 +144,38 @@ class Redash {
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200"
-        ArrayList parsedJson = new JsonSlurperClassic().parseText(response.content)
-        int resourcesCount = parsedJson.size()
-        resourcesCount.times {
-            String nameValue
-            String id
-            nameValue = parsedJson[it]["name"]
-            if (!nameValue.matches("(.*)audit(.*)") && !nameValue.matches("admin") &&
-                    !nameValue.matches("default")) {
-                id = parsedJson[it]["id"]
-                context.logger.info("Removing not audit resource: " + nameValue)
-                context.script.httpRequest url: "${url}/${id}",
-                        httpMode: "DELETE",
-                        customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
-                        consoleLogResponseBody: context.logLevel == "DEBUG",
-                        quiet: context.logLevel != "DEBUG",
-                        validResponseCodes: "200,204"
+        def parsedJson = new JsonSlurperClassic().parseText(response.content)
+        if (url.contains("api/dashboards")) {
+            int dashboardCount = parsedJson["count"]
+            dashboardCount.times {
+                int dashboard_id = parsedJson["results"][it]["id"]
+                if (dashboard_id > 3) {
+                    context.logger.info("Removing not audit dashboards: " + parsedJson["results"][it]["name"])
+                    context.script.httpRequest url: "${url}/${dashboard_id}",
+                            httpMode: "DELETE",
+                            customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
+                            consoleLogResponseBody: context.logLevel == "DEBUG",
+                            quiet: context.logLevel != "DEBUG",
+                            validResponseCodes: "200,204"
+                }
+            }
+        } else {
+            int resourcesCount = parsedJson.size()
+            resourcesCount.times {
+                String nameValue
+                String id
+                nameValue = parsedJson[it]["name"]
+                if (!nameValue.matches("(.*)audit(.*)") && !nameValue.matches("admin") &&
+                        !nameValue.matches("default")) {
+                    id = parsedJson[it]["id"]
+                    context.logger.info("Removing not audit resource: " + nameValue)
+                    context.script.httpRequest url: "${url}/${id}",
+                            httpMode: "DELETE",
+                            customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
+                            consoleLogResponseBody: context.logLevel == "DEBUG",
+                            quiet: context.logLevel != "DEBUG",
+                            validResponseCodes: "200,204"
+                }
             }
         }
     }
