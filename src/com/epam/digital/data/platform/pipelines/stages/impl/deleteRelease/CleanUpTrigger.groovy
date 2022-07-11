@@ -75,7 +75,7 @@ class CleanUpTrigger {
         String currentCr = context.script.sh(script: "oc get $CrName -l recreateByCleanup=true -o json | " +
                 "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
                 ".items[].metadata.selfLink,.items[].metadata.ownerReferences,.items[].metadata.creationTimestamp," +
-                ".items[].metadata.generation,.items[].metadata.finalizers)'", returnStdout: true)
+                ".items[].metadata.generation,.items[].metadata.finalizers,.items[].status)'", returnStdout: true)
         context.script.writeFile(file: fileName, text: currentCr)
     }
 }
