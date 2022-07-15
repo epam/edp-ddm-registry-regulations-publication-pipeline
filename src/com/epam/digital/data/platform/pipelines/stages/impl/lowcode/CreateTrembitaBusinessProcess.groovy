@@ -92,6 +92,30 @@ class CreateTrembitaBusinessProcess {
             context.platform.apply(destination)
             context.logger.info("Configuration from configuration.yml have been sucessfully created")
 
+            if (trembitaYaml["external-systems"]) {
+                try {
+                    String serviceTemplate = context.script.libraryResource("${context.YAML_RESOURCES_RELATIVE_PATH}" +
+                            "/serviceentry/external-system-service-entry.yaml")
+                    String serviceDestination = "external-systems-configuration.yaml"
+                    trembitaYaml["external-systems"].each() { service ->
+                        ArrayList<String> serviceUrl = []
+                        serviceUrl.add("${service.getValue()["url"].replaceAll("http(s)?://|www\\.|/.*", "")}")
+                        if (service.getValue()["auth"]["partner-token-auth-url"])
+                            serviceUrl.add(service.getValue()["auth"]["partner-token-auth-url"].replaceAll("http(s)?://|www\\.|/.*", ""))
+                        LinkedHashMap<String, String> serviceBinding = [
+                                "serviceName" : service.getKey(),
+                                "serviceUrl"  : serviceUrl
+                        ]
+                        context.script.writeFile(file: serviceDestination, text: TemplateRenderer.renderTemplate(serviceTemplate, serviceBinding))
+                        context.platform.apply(serviceDestination)
+                        context.logger.info("Service entry for ${service.getKey()} have been successfully created")
+                    }
+                } catch (any) {
+                    context.logger.info("Error during external-systems service entry creating/updating")
+                }
+            } else {
+                context.logger.info("External-systems list is not found in configuration.yml")
+            }
         } else {
             context.logger.info("Skip trembita configuration creation due to empty change list")
         }
