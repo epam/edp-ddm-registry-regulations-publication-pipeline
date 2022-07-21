@@ -50,7 +50,8 @@ class DeployProjects {
                             'dockerProxyRegistry': context.dockerRegistry.proxyHost,
                             'version'            : context.registry.version,
                             'keycloak.url'       : context.keycloak.url,
-                            'deployProfile'      : context.registryRegulations.getRegistryConfValues(true)
+                            'deployProfile'      : context.registryRegulations.getRegistryConfValues(true),
+                            'nexusPullSecret'    : context.dockerRegistry.PUSH_SECRET
                     ]
                     LinkedHashMap platformValuesPath = context.script.readYaml file: "${context.getWorkDir()}" +
                             "/platform-values.yaml"
