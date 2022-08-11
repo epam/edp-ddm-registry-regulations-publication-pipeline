@@ -45,6 +45,8 @@ class Citus {
     public String analyticsAdminRolePass
     public String notificationPublisherUser
     public String notificationPublisherPass
+    public String geoServerPublisherUser
+    public String geoServerPublisherPass
 
     public String masterPod
     public String masterRepPod
@@ -79,6 +81,8 @@ class Citus {
         analyticsAdminRolePass = DecodeHelper.decodeBase64(citusSecretRolesJson["anAdmPass"])
         notificationPublisherUser = DecodeHelper.decodeBase64(citusSecretRolesJson["notificationTemplatePublisherName"])
         notificationPublisherPass = DecodeHelper.decodeBase64(citusSecretRolesJson["notificationTemplatePublisherPass"])
+        geoServerPublisherUser = DecodeHelper.decodeBase64(citusSecretRolesJson["geoserverRoleName"])
+        geoServerPublisherPass = DecodeHelper.decodeBase64(citusSecretRolesJson["geoserverRolePass"])
 
         masterPod = context.platform.getAll("pods", "-l app=citus-master " +
                 "-o jsonpath=\"{.items[0].metadata.name}\"")
