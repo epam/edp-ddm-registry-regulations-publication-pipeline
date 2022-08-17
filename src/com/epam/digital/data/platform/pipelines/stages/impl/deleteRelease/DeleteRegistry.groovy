@@ -100,8 +100,6 @@ class DeleteRegistry {
             context.script.sh(script: "oc rsync sql_redash/ ${REDASH_POD_NAME}:/tmp/")
             context.platform.podExec(REDASH_POD_NAME,
                     "bash -c \'export PGPASSWORD=${context.platform.getSecretValue("redash-chart-postgresql", "postgresql-password")}; psql redash -U redash -f tmp/${CLEANUP_REDASH_USERS_SQL}\'", "")
-            context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/dashboards",
-                    context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",
                     context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
