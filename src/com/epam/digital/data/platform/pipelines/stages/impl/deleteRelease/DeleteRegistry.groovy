@@ -17,9 +17,7 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.deleteRelease
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
-import com.epam.digital.data.platform.pipelines.helper.DecodeHelper
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.BusinessProcMgmtSys
-import com.epam.digital.data.platform.pipelines.registrycomponents.regular.FormManagement
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
@@ -33,26 +31,9 @@ class DeleteRegistry {
     private String CLEANUP_REDASH_USERS_SQL = "CleanupRedashUsers.sql"
     private String REDASH_POD_NAME = "redash-viewer-postgresql-0"
 
-    LinkedHashMap formProviderSecretJson
-    LinkedHashMap formModelerSecretJson
-
     void run() {
-
-        formProviderSecretJson = context.platform.getAsJson("secret", FormManagement.PROVIDER_DB_SECRET)["data"]
-        formModelerSecretJson = context.platform.getAsJson("secret", FormManagement.MODELER_DB_SECRET)["data"]
-
         LinkedHashMap parallelDeletion = [:]
-        parallelDeletion["cleanFormManagementDB"] = {
-            try {
-                context.logger.info("Cleaning form provider DB")
-                cleanFormManagementDB(FormManagement.PROVIDER_DEPLOYMENT_NAME, FormManagement.PROVIDER_DB_POD,
-                        FormManagement.PROVIDER_DB_NAME, DecodeHelper.decodeBase64(formProviderSecretJson["user"]),
-                        DecodeHelper.decodeBase64(formProviderSecretJson["password"]),
-                        FormManagement.PROVIDER_DB_CONTAINER)
-            } catch (any) {
-                context.logger.warn("There was an error during form management databases cleanup")
-            }
-        }
+
         parallelDeletion["cleanCitusDB"] = {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 0)
@@ -142,16 +123,5 @@ class DeleteRegistry {
             context.logger.info("Kafka topics were successfully removed.")
         }
         context.script.parallel(parallelDeletion)
-    }
-
-    void cleanFormManagementDB(String deploymentName, String dbPodName, String dbName,
-                               String dbUser, String dbPass, String dbContainerName) {
-        context.platform.scale("deployment/$deploymentName", 0)
-        context.platform.podExec(dbPodName, "mongo $dbName " +
-                "--authenticationDatabase ${FormManagement.AUTH_DATABASE} " +
-                "-u $dbUser " +
-                "-p $dbPass " +
-                "--eval \"db.dropDatabase()\"", dbContainerName)
-        context.platform.scale("deployment/$deploymentName", 1)
     }
 }
