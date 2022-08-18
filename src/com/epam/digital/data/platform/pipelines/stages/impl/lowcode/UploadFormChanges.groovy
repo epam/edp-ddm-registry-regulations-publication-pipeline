@@ -18,7 +18,7 @@ package com.epam.digital.data.platform.pipelines.stages.impl.lowcode
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.registry.RegulationType
-import com.epam.digital.data.platform.pipelines.registrycomponents.regular.FormManagement
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.FormShemaProvider
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import groovy.json.JsonSlurper
@@ -43,12 +43,12 @@ class UploadFormChanges {
         def response
         try {
             context.logger.debug("Check if form ${formName} already exists using form name")
-            response = context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/${formName}",
+            response = context.script.httpRequest url: "${FormShemaProvider.PROVIDER_URL}/${formName}",
                     httpMode: 'GET',
                     customHeaders: [[maskValue: true, name: 'X-Access-Token', value: token]],
                     consoleLogResponseBody: context.logLevel == "DEBUG",
                     quiet: context.logLevel != "DEBUG",
-                    validResponseCodes: "200,400"
+                    validResponseCodes: "200,404"
             if (response.getStatus() == 200) {
                 context.logger.debug("Form ${formName} exists. Required action is update")
                 return true
@@ -64,7 +64,7 @@ class UploadFormChanges {
     private void createForm(String formFile, String content, String token) {
         try {
             context.logger.info("Creating form ${formFile}")
-            context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/form",
+            context.script.httpRequest url: "${FormShemaProvider.PROVIDER_URL}",
                     httpMode: 'POST',
                     requestBody: content,
                     customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"],
@@ -82,7 +82,7 @@ class UploadFormChanges {
     private void updateForm(String formFile, String formName, String content, String token) {
         try {
             context.logger.info("Updating form ${formFile}")
-            context.script.httpRequest url: "${FormManagement.PROVIDER_URL}/${formName}",
+            context.script.httpRequest url: "${FormShemaProvider.PROVIDER_URL}/${formName}",
                     httpMode: 'PUT',
                     requestBody: content,
                     customHeaders: [[maskValue: false, name: 'Content-Type', value: "application/json; charset=utf-8"],
