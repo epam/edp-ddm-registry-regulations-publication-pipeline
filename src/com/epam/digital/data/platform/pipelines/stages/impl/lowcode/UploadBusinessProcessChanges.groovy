@@ -55,7 +55,7 @@ class UploadBusinessProcessChanges {
                     validResponseCodes: "200"
             context.logger.info("${file} have been succussfully deployed")
         } catch (any) {
-            context.logger.warn("Failed to deploy ${file}")
+            context.logger.error("Failed to deploy ${file}")
         }
     }
 }
