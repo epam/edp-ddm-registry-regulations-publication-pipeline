@@ -26,7 +26,7 @@ class CleanUpTrigger {
     BuildContext context
 
     void run() {
-        context.script.timeout(unit: 'MINUTES', time: 20) {
+        context.script.timeout(unit: 'MINUTES', time: 30) {
             LinkedHashMap parallelDeletion = [:]
 
             context.logger.info("Get current codebase and codebasebranch CRs")
