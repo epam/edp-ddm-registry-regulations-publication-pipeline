@@ -23,6 +23,8 @@ class Registry {
     public String name
     public String version
     public String SETTINGS_FILE = "settings.yaml"
+    public String REGISTRY_SETTINGS_FILE = "settings.yml"
+    public String REGISTRY_SETTINGS_FILE_PATH
 
     private final BuildContext context
 
@@ -34,6 +36,7 @@ class Registry {
         LinkedHashMap settingsYaml = context.script.readYaml file: SETTINGS_FILE
         this.name = settingsYaml["settings"]["general"]["register"]
         this.version = settingsYaml["settings"]["general"]["version"]
+        REGISTRY_SETTINGS_FILE_PATH = "${RegulationType.REGISTRY_SETTINGS.getValue()}/${REGISTRY_SETTINGS_FILE}"
     }
 
     @Override
