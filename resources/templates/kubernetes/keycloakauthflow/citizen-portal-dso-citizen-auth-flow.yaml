@@ -29,6 +29,7 @@ spec:
           trembitaProtocolVersion: '${trembitaProtocolVersion}'
           esignHintUrl: https://diia.gov.ua/faq/1
           widgetUrl: '${widgetUrl}'
+          widgetHeight: '400'
           dsoUrl: '${dsoUrl}'
           registryXRoadInstance: ${registryXRoadInstance}
           clientSubsystemCode: '${clientSubsystemCode}'

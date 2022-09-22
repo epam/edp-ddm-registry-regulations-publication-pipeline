@@ -30,19 +30,25 @@ class RegistryRegulationsValidation {
 
     void run() {
         context.logger.info("Registry regulations files validation")
+        String validatorParams = "" +
+                "--bp-auth-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS_AUTH).join(",")} " +
+                "--bp-trembita-files=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.EXTERNAL_SYSTEM.getValue()} " +
+                "--bp-trembita-config=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.CONFIG.getValue()} " +
+                "--bpmn-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS).join(",")} " +
+                "--dmn-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_RULE).join(",")} " +
+                "--form-files=${context.registryRegulations.getAllRegulations(RegulationType.UI_FORM).join(",")} " +
+                "--global-vars-files=${context.registryRegulations.getAllRegulations(RegulationType.GLOBAL_VARS).join(",")} " +
+                "--roles-files=${context.registryRegulations.getAllRegulations(RegulationType.ROLES).join(",")} " +
+                "--liquibase-files=data-model/main-liquibase.xml " +
+                "--datafactory-settings-files=${context.registry.SETTINGS_FILE} " +
+                "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv "
+
+        if (context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE_PATH)) {
+            validatorParams += "--registry-settings-files=${context.registry.REGISTRY_SETTINGS_FILE_PATH} "
+        }
+
         try {
-            context.script.sh(script: "java -jar ${LOWCODE_VALIDATOR_JAR} " +
-                    "--bp-auth-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS_AUTH).join(",")} " +
-                    "--bp-trembita-files=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.EXTERNAL_SYSTEM.getValue()} " +
-                    "--bp-trembita-config=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.CONFIG.getValue()} " +
-                    "--bpmn-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS).join(",")} " +
-                    "--dmn-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_RULE).join(",")} " +
-                    "--form-files=${context.registryRegulations.getAllRegulations(RegulationType.UI_FORM).join(",")} " +
-                    "--global-vars-files=${context.registryRegulations.getAllRegulations(RegulationType.GLOBAL_VARS).join(",")} " +
-                    "--roles-files=${context.registryRegulations.getAllRegulations(RegulationType.ROLES).join(",")} " +
-                    "--liquibase-files=data-model/main-liquibase.xml " +
-                    "--settings-files=${context.registry.SETTINGS_FILE} " +
-                    "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv " +
+            context.script.sh(script: "java -jar ${LOWCODE_VALIDATOR_JAR} ${validatorParams} " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
         }
         catch (any) {

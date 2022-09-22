@@ -36,6 +36,7 @@ class UpdateThemeLoginPage {
                     context.script.writeFile(file: tmpFile, text: authFlowYaml)
                     context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
                     context.platform.apply(tmpFile)
+                    context.script.sh("rm -f ${tmpFile}")
                 }
             } else {
                 context.logger.info("Theme file is not set, using default")
