@@ -59,9 +59,18 @@ class DeployProjects {
                     if (disableRequestsLimits != null) {
                         parametersMap.put("global.disableRequestsLimits", disableRequestsLimits)
                     }
+                    String fileParameters = ""
+                    String dataComponentNameNormalized = dataComponent.name.replace('-','').replace('api',"Api")
+                    if (platformValuesPath.global.registry?."${dataComponentNameNormalized}") {
+                        LinkedHashMap registryProperties = [global: [registry: ["${dataComponentNameNormalized}":
+                                                platformValuesPath.global.registry?."${dataComponentNameNormalized}"]]]
+                        String componentValuesFile = "${dataComponent.getWorkDir()}/${dataComponentNameNormalized}.yaml"
+                        context.script.writeYaml file: componentValuesFile, data: registryProperties, overwrite: true
+                        fileParameters = "-f ${componentValuesFile}"
+                    }
                     context.script.dir(dataComponent.getWorkDir()) {
                         Helm.upgrade(context, dataComponent.fullName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
-                                context.namespace)
+                                fileParameters, context.namespace)
                     }
                 }
         }
