@@ -41,6 +41,8 @@ spec:
           registryToken: ${registryToken}
           startPageUrl: https://citizen-portal-${cdname}.${dnsWildcard}/login
           registrySubsystemCode: '${registrySubsystemCode}'
+          title: ''
+          titleFull: ''
       authenticatorFlow: false
       priority: 1
       requirement: ALTERNATIVE
