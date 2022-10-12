@@ -30,7 +30,9 @@ class CreateRegistrySettingsFile {
     void run() {
         context.script.sh("mkdir -p ${RegulationType.REGISTRY_SETTINGS.value}")
         context.script.dir(RegulationType.REGISTRY_SETTINGS.value) {
-            if (!context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE)) {
+            if (context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE)) {
+                context.logger.info("Settings file already exists")
+            } else {
                 context.logger.info("Creating settings file")
                 String template = context.script.libraryResource("templates/other/settings.yml")
                 context.script.writeFile(file: context.registry.REGISTRY_SETTINGS_FILE, text: template)
@@ -43,8 +45,6 @@ class CreateRegistrySettingsFile {
                         context.gitClient.gitPush(context.codebase.branch)
                     }
                 }
-            } else {
-                context.logger.info("Settings file already exists")
             }
         }
     }
