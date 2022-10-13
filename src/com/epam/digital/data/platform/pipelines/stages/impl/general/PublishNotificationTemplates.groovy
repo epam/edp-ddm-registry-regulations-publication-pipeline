@@ -18,6 +18,7 @@ package com.epam.digital.data.platform.pipelines.stages.impl.general
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.registry.RegulationType
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.NotificationService
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 
@@ -40,12 +41,9 @@ class PublishNotificationTemplates {
         context.logger.info("Publishing of notification templates")
         try {
             context.script.sh(script: "java -jar " +
-                    "-DPOSTGRES_USER=${context.citus.notificationPublisherUser} " +
-                    "-DPOSTGRES_PASSWORD=${context.citus.notificationPublisherPass} " +
-                    "-DDB_URL=${context.citus.CITUS_MASTER_URL} " +
-                    "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
-                    "-DDB_NAME=notifications " +
                     "${NOTIFICATION_TEMPLATES_PUBLISHER_JAR} " +
+                    "--notification-service.url=${NotificationService.URL} " +
+                    "--thirdPartySystems.accessToken=${context.keycloak.getAccessToken(context.jenkinsDeployer)} " +
                     "--notification_templates " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
             context.logger.info("Notification templates have been published")
