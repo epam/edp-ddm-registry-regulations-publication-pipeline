@@ -28,12 +28,18 @@ class UpdateRegistrySettings {
         if (context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE_PATH)) {
             try {
                 LinkedHashMap registrySettings = context.script.readYaml(file: context.registry.REGISTRY_SETTINGS_FILE_PATH)
-                registrySettings["settings"]["general"]["title"] = registrySettings["settings"]["general"]["title"]
-                        .replaceAll("'", "’").replaceAll("`", "’")
-                registrySettings["settings"]["general"]["titleFull"] = registrySettings["settings"]["general"]["titleFull"]
-                        .replaceAll("'", "’").replaceAll("`", "’")
-                String title = registrySettings["settings"]["general"]["title"]
-                String titleFull = registrySettings["settings"]["general"]["titleFull"]
+                String title, titleFull
+                if (registrySettings["settings"]["general"]["title"] && registrySettings["settings"]["general"]["titleFull"]) {
+                    registrySettings["settings"]["general"]["title"] = registrySettings["settings"]["general"]["title"]
+                            .replaceAll("'", "’").replaceAll("`", "’")
+                    registrySettings["settings"]["general"]["titleFull"] = registrySettings["settings"]["general"]["titleFull"]
+                            .replaceAll("'", "’").replaceAll("`", "’")
+                    title = registrySettings["settings"]["general"]["title"]
+                    titleFull = registrySettings["settings"]["general"]["titleFull"]
+                } else {
+                    title = ''
+                    titleFull = ''
+                }
                 ["officer", "citizen"].each {
                     LinkedHashMap authFlowYaml = context.script.readYaml(text: context.platform
                             .get("keycloakauthflows.v1.edp.epam.com",
@@ -53,9 +59,10 @@ class UpdateRegistrySettings {
                     context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
                 }
             }
-            catch (any) {
-                context.logger.warn("Failed to update registry settings")
+            catch (Exception e) {
+                context.logger.warn("Failed to update registry settings:\n ${e}")
             }
         }
     }
+
 }
