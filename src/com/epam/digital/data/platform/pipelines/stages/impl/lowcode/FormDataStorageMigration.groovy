@@ -30,7 +30,9 @@ class FormDataStorageMigration {
 
     void run() {
         String migrationCM = "form-data-storage-migration"
-        if (!context.platform.checkObjectExists("cm", migrationCM)) {
+        if (context.platform.checkObjectExists("cm", migrationCM)) {
+            context.logger.info("Skip form data storage migration because it is already migrated")
+        } else {
             CephBucket formDataStorageBucket = new CephBucket("lowcode-form-data-storage", context)
             formDataStorageBucket.init()
             try {
@@ -66,8 +68,6 @@ class FormDataStorageMigration {
             } catch (any) {
                 context.script.error("Failed to migrate form data storage")
             }
-        } else {
-            context.logger.info("Skip form data storage migration because it is already migrated")
         }
     }
 }
