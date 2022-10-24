@@ -79,7 +79,8 @@ class CreateTrembitaBusinessProcess {
                     "clientSubsystemCode"    : trembitaMapPath["client"]["subsystem-code"],
                     "clientMemberCode"       : trembitaMapPath["client"]["member-code"],
                     "trembitaUrl"            : trembitaMapPath["trembita-url"],
-                    "registryToken"          : trembitaMapPath["authorization-token"],
+                    "registryToken"          : context.platform.getSecretValue("trembita-registries-secrets",
+                            "trembita\\.registries\\.edr-registry\\.auth\\.secret\\.token"),
                     "registrySubsystemCode"  : trembitaMapPath["service"]["subsystem-code"],
                     "clientMemberClass"      : trembitaMapPath["client"]["member-class"],
                     "cdname"                 : "${cdPipelineName}-${cdPipelineStageName}",
@@ -103,8 +104,8 @@ class CreateTrembitaBusinessProcess {
                         if (service.getValue()["auth"]["partner-token-auth-url"])
                             serviceUrl.add(service.getValue()["auth"]["partner-token-auth-url"].replaceAll("http(s)?://|www\\.|/.*", ""))
                         LinkedHashMap<String, String> serviceBinding = [
-                                "serviceName" : service.getKey(),
-                                "serviceUrl"  : serviceUrl
+                                "serviceName": service.getKey(),
+                                "serviceUrl" : serviceUrl
                         ]
                         context.script.writeFile(file: serviceDestination, text: TemplateRenderer.renderTemplate(serviceTemplate, serviceBinding))
                         context.platform.apply(serviceDestination)
