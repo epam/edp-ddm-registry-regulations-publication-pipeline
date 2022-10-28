@@ -40,16 +40,16 @@ class GeoserverPublisher {
         context.script.sh(script: "cp ${context.registry.SETTINGS_FILE} /home/jenkins/geoserver-publisher")
         try {
             context.script.sh(script: "java -jar " +
-                    "-DSTORE_DB_PASSWORD=${context.citus.geoServerPublisherPass} " +
-                    "-DSTORE_DB_USER=${context.citus.geoServerPublisherUser} " +
+                    "-DSTORE_DB_PASSWORD=${context.postgres.geoServerPublisherPass} " +
+                    "-DSTORE_DB_USER=${context.postgres.geoServerPublisherUser} " +
                     "-DDB_SCHEMA=registry " +
-                    "-DDB_HOST=${context.citus.CITUS_MASTER_URL} " +
-                    "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
+                    "-DDB_HOST=${context.postgres.OPERATIONAL_MASTER_URL} " +
+                    "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
                     "-DDB_NAME=registry " +
                     "-DGEOSERVER_LOGIN=admin " +
                     "-DGEOSERVER_PASSWORD=${context.platform.getSecretValue("geo-server-admin-secret","password")} " +
-                    "-DGEOSERVER_PUBLISHER_DB_PASSWORD=${context.citus.password} " +
-                    "-DGEOSERVER_PUBLISHER_DB_USER=${context.citus.user} " +
+                    "-DGEOSERVER_PUBLISHER_DB_PASSWORD=\'${context.postgres.operational_pg_password}\' " +
+                    "-DGEOSERVER_PUBLISHER_DB_USER=${context.postgres.operational_pg_user} " +
                     "-DGEOSERVER_URL=http://officer-portal-geo-server:8080 " +
                     "${GEOSERVER_PUBLISHER_JAR} " +
                     "--settings-file=${context.registry.SETTINGS_FILE} " +

@@ -24,7 +24,7 @@ import com.epam.digital.data.platform.pipelines.registrycomponents.external.Dock
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.Keycloak
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.KeycloakClient
 import com.epam.digital.data.platform.pipelines.registrycomponents.generated.DataComponent
-import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Citus
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.PostgresOperator
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.GitServer
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Redash
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
@@ -50,7 +50,7 @@ class BuildContext {
     public LinkedHashMap<String, Boolean> bpmsConfigMapsChanged = [:]
     public RegistryRegulations registryRegulations
     public Keycloak keycloak
-    public Citus citus
+    public PostgresOperator postgres
     public Redash redash
     public DockerRegistry dockerRegistry
     public GitServer gitServer

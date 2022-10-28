@@ -36,12 +36,12 @@ class GenerateProjects {
         context.logger.info("Generating data services")
         context.script.sh(script: "cp ${context.registry.SETTINGS_FILE} ${SVC_GEN_UTIL_DIR}")
         context.script.dir(context.getGeneratedProjectsDir()) {
-            context.script.sh(script: "java -jar " +
-                    "-DPOSTGRES_PASSWORD=${context.citus.password} " +
-                    "-DPOSTGRES_USER=${context.citus.user} " +
+            context.script.sh(script: "set +x; java -jar " +
+                    "-DPOSTGRES_PASSWORD=\'${context.postgres.operational_pg_password}\' " +
+                    "-DPOSTGRES_USER=${context.postgres.operational_pg_user} " +
                     "-DDB_NAME=${context.registry.name} " +
-                    "-DDB_URL=${context.citus.CITUS_MASTER_URL} " +
-                    "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
+                    "-DDB_URL=${context.postgres.OPERATIONAL_MASTER_URL} " +
+                    "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
                     "-Dsettings=${context.getWorkDir()}/${context.registry.SETTINGS_FILE} " +
                     "-DPLATFORM_VALUES_PATH=${context.registryRegulations.getRegistryConfValues()} " +
                     "${SVC_GEN_UTIL_DIR}/service-generation-utility.jar " +
