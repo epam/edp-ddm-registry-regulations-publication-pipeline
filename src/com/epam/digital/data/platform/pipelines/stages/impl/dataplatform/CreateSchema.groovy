@@ -33,69 +33,81 @@ class CreateSchema {
 
     void run() {
         try {
-            context.script.sh(script: "oc rsync data-model/data-load ${context.citus.masterPod}:/tmp")
+            context.script.sh(script: "oc rsync data-model/data-load ${context.postgres.masterPod}:/tmp")
         }
         catch (any) {
-            context.logger.warn("Failed to copy data-model/data-load to ${context.citus.masterPod}")
+            context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
         }
 
-        String CITUS_MASTER_REGISTRY_DB_URL = "jdbc:postgresql://${context.citus.CITUS_MASTER_URL}:" +
-                "${context.citus.CITUS_MASTER_PORT}/${context.registry.name}"
-        String CITUS_MASTER_REP_REGISTRY_DB_URL = "jdbc:postgresql://${context.citus.CITUS_MASTER_REP_URL}:" +
-                "${context.citus.CITUS_MASTER_REP_PORT}/${context.registry.name}"
+        String OPERATIONAL_MASTER_REGISTRY_DB_URL = "jdbc:postgresql://${context.postgres.OPERATIONAL_MASTER_URL}:" +
+                "${context.postgres.OPERATIONAL_MASTER_PORT}/${context.registry.name}"
+        String ANALYTICAL_MASTER_REGISTRY_DB_URL = "jdbc:postgresql://${context.postgres.ANALYTICAL_MASTER_URL}:" +
+                "${context.postgres.ANALYTICAL_MASTER_PORT}/${context.registry.name}"
 
         context.logger.info("Pre master")
         runLiquibase(changeLogFile: LIQUIBASE_PRE_DEPLOY_SCRIPT,
-                url: CITUS_MASTER_REGISTRY_DB_URL,
+                url: OPERATIONAL_MASTER_REGISTRY_DB_URL,
                 dbName: context.registry.name,
                 contexts: "all,pub",
-                regVersion: context.registry.version)
+                regVersion: context.registry.version,
+                username: context.postgres.ownerRole,
+                password: context.postgres.ownerRolePass)
 
         context.logger.info("Pre replica")
         runLiquibase(changeLogFile: LIQUIBASE_PRE_DEPLOY_SCRIPT,
-                url: CITUS_MASTER_REP_REGISTRY_DB_URL,
+                url: ANALYTICAL_MASTER_REGISTRY_DB_URL,
                 dbName: context.registry.name,
                 contexts: "all,sub",
                 connDbname: context.registry.name,
-                connHost: context.citus.CITUS_MASTER_URL,
-                connPort: context.citus.CITUS_MASTER_PORT,
-                regVersion: context.registry.version)
+                connHost: context.postgres.OPERATIONAL_MASTER_URL,
+                connPort: context.postgres.OPERATIONAL_MASTER_PORT,
+                regVersion: context.registry.version,
+                username: context.postgres.ownerRole,
+                password: context.postgres.ownerRolePass)
 
         context.logger.info("Main master")
         runLiquibase(changeLogFile: LIQUIBASE_MAIN_SCRIPT,
-                url: CITUS_MASTER_REGISTRY_DB_URL,
-                contexts: "all,pub")
+                url: OPERATIONAL_MASTER_REGISTRY_DB_URL,
+                contexts: "all,pub",
+                username: context.postgres.ownerRole,
+                password: context.postgres.ownerRolePass)
 
         context.logger.info("Main replica")
         runLiquibase(changeLogFile: LIQUIBASE_MAIN_SCRIPT,
-                url: CITUS_MASTER_REP_REGISTRY_DB_URL,
-                contexts: "all,sub")
+                url: ANALYTICAL_MASTER_REGISTRY_DB_URL,
+                contexts: "all,sub",
+                username: context.postgres.ownerRole,
+                password: context.postgres.ownerRolePass)
 
         context.logger.info("Post deploy master")
         runLiquibase(changeLogFile: LIQUIBASE_POST_DEPLOY_SCRIPT,
-                url: CITUS_MASTER_REGISTRY_DB_URL,
+                url: OPERATIONAL_MASTER_REGISTRY_DB_URL,
                 contexts: "all,pub",
                 dbName: context.registry.name,
-                regVersion: context.registry.version)
+                regVersion: context.registry.version,
+                username: context.postgres.operational_pg_user,
+                password: context.postgres.operational_pg_password)
 
         context.logger.info("Post deploy replica")
         runLiquibase(changeLogFile: LIQUIBASE_POST_DEPLOY_SCRIPT,
-                url: CITUS_MASTER_REP_REGISTRY_DB_URL,
+                url: ANALYTICAL_MASTER_REGISTRY_DB_URL,
                 contexts: "all,sub",
                 dbName: context.registry.name,
-                regVersion: context.registry.version)
+                regVersion: context.registry.version,
+                username: context.postgres.analytical_pg_user,
+                password: context.postgres.analytical_pg_password)
 
     }
 
     private void runLiquibase(LinkedHashMap params) {
-        context.script.sh(script: "java -jar ${LIQUIBASE_JAR} " +
+        context.script.sh(script: "set +x; java -jar ${LIQUIBASE_JAR} " +
                 "--liquibaseSchemaName=public " +
                 "--classpath=${LIQUIBASE_CLASSPATH} " +
                 "--driver=org.postgresql.Driver " +
                 "--changeLogFile=${params.get("changeLogFile")} " +
                 "--url=${params.get("url")} " +
-                "--username=${context.citus.ownerRole} " +
-                "--password=${context.citus.ownerRolePass} " +
+                "--username=${params.get("username")} " +
+                "--password='${params.get("password")}' " +
                 "--contexts=${params.get("contexts")} " +
                 "--databaseChangeLogTableName=ddm_db_changelog " +
                 "--databaseChangeLogLockTableName=ddm_db_changelog_lock " +

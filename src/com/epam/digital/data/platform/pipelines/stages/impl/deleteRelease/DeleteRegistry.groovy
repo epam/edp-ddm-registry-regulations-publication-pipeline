@@ -34,27 +34,27 @@ class DeleteRegistry {
     void run() {
         LinkedHashMap parallelDeletion = [:]
 
-        parallelDeletion["cleanCitusDB"] = {
+        parallelDeletion["cleanPostgresDB"] = {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 0)
-            Map binding = ["OWNER_ROLE": context.citus.ownerRole]
+            Map binding = ["OWNER_ROLE": context.postgres.ownerRole]
 
-            context.logger.info("Copy DB scripts on citus master and replica")
+            context.logger.info("Copy DB scripts on postgres master and replica")
             String template = context.script.libraryResource("sql/${CLEANUP_REGISTRY_SQL}")
             context.script.writeFile(file: "sql/${CLEANUP_REGISTRY_SQL}", text: TemplateRenderer.renderTemplate(template, binding))
             String cleanupProcessHistorySqlResource = context.script.libraryResource("sql/${CLEANUP_PROCESS_HISTORY_SQL}")
             context.script.writeFile(file: "sql/${CLEANUP_PROCESS_HISTORY_SQL}", text: cleanupProcessHistorySqlResource)
-            context.script.sh(script: "oc rsync sql/ ${context.citus.masterRepPod}:/tmp/")
-            context.script.sh(script: "oc rsync sql/ ${context.citus.masterPod}:/tmp/")
+            context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterRepPod}:/tmp/")
+            context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterPod}:/tmp/")
 
             context.logger.info("Cleaning registry DB on replica")
-            context.citus.psqlScript(context.citus.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
+            context.postgres.psqlScript(context.postgres.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.analytical_pg_user, "-d ${context.registry.name}")
 
             context.logger.info("Cleaning registry DB on master")
-            context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", "-d ${context.registry.name}")
+            context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.operational_pg_user, "-d ${context.registry.name}")
 
             context.logger.info("Cleaning process_history DB on master")
-            context.citus.psqlScript(context.citus.masterPod, "/tmp/${CLEANUP_PROCESS_HISTORY_SQL}")
+            context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_PROCESS_HISTORY_SQL}", context.postgres.operational_pg_user)
 
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
@@ -63,12 +63,12 @@ class DeleteRegistry {
             LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
             officerUsersYaml["roles"].each { String role ->
                 try {
-                    context.citus.psqlCommand(context.citus.masterRepPod,
-                            "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name)
+                    context.postgres.psqlCommand(context.postgres.masterRepPod,
+                            "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name, context.postgres.analytical_pg_user)
                 } catch (any) {
-                    if (context.citus.psqlCommand(context.citus.masterRepPod,
+                    if (context.postgres.psqlCommand(context.postgres.masterRepPod,
                             "SELECT 1 FROM pg_roles WHERE rolname='analytics_${role["name"]}';",
-                            context.registry.name).trim() == '1') {
+                            context.registry.name, context.postgres.analytical_pg_user).trim() == '1') {
                         context.script.error("Removing of analytic role $role from database $context.registry.name FAILED")
                     }
                 }
@@ -78,7 +78,7 @@ class DeleteRegistry {
             context.logger.info("Removing Redash resources")
             String cleanupRedashUsers = context.script.libraryResource("sql/${CLEANUP_REDASH_USERS_SQL}")
             context.script.writeFile(file: "sql_redash/${CLEANUP_REDASH_USERS_SQL}", text: cleanupRedashUsers)
-            context.script.sh(script: "oc rsync sql_redash/ ${REDASH_POD_NAME}:/tmp/")
+            context.script.sh(script: "oc rsync --no-perms=true sql_redash/ ${REDASH_POD_NAME}:/tmp/")
             context.platform.podExec(REDASH_POD_NAME,
                     "bash -c \'export PGPASSWORD=${context.platform.getSecretValue("redash-chart-postgresql", "postgresql-password")}; psql redash -U redash -f tmp/${CLEANUP_REDASH_USERS_SQL}\'", "")
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/dashboards",

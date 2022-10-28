@@ -20,7 +20,7 @@ import com.epam.digital.data.platform.pipelines.platform.PlatformFactory
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.Keycloak
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.KeycloakClient
-import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Citus
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.PostgresOperator
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Redash
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
@@ -66,10 +66,10 @@ void call() {
 
             context.gitClient = new GitClient(context)
 
-            context.logger.info("Initializing citus")
-            context.citus = new Citus(context)
-            context.citus.init()
-            context.logger.debug("Citus: ${context.citus.toString()}")
+            context.logger.info("Initializing postgres")
+            context.postgres = new PostgresOperator(context)
+            context.postgres.init()
+            context.logger.debug("PostgresOperator: ${context.postgres.toString()}")
 
             context.logger.info("Initializing redash")
             context.redash = new Redash(context)

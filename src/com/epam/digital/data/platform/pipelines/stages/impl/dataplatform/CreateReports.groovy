@@ -31,16 +31,16 @@ class CreateReports {
         if (context.registryRegulations.filesToDeploy.get(RegulationType.REPORTS)) {
             try {
                 context.logger.info("Publishing redash ${RegulationType.REPORTS.value}")
-                context.script.sh(script: "java -jar " +
+                context.script.sh(script: "set +x; java -jar " +
                         "-DREDASH_URL=${context.redash.viewerUrl} " +
                         "-DREDASH_API_KEY=${context.redash.viewerApiKey} " +
-                        "-DPOSTGRES_PASSWORD=${context.citus.password} " +
-                        "-DPOSTGRES_USER=${context.citus.user} " +
+                        "-DPOSTGRES_PASSWORD=\'${context.postgres.operational_pg_password}\' " +
+                        "-DPOSTGRES_USER=${context.postgres.operational_pg_user} " +
                         "-DDB_NAME=${context.registry.name} " +
-                        "-DDB_URL=${context.citus.CITUS_MASTER_URL} " +
-                        "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
-                        "-DPWD_ADMIN=${context.citus.analyticsAdminRolePass} " +
-                        "-DPWD_AUDITOR=${context.citus.auditRolePass} " +
+                        "-DDB_URL=${context.postgres.OPERATIONAL_MASTER_URL} " +
+                        "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
+                        "-DPWD_ADMIN=${context.postgres.analyticsAdminRolePass} " +
+                        "-DPWD_AUDITOR=${context.postgres.auditRolePass} " +
                         "${REDASH_PUBLISHER_JAR} " +
                         "--reports " +
                         "${context.logLevel == "DEBUG" ? "1>&2" : ""}")

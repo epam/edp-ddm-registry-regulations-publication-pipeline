@@ -37,13 +37,13 @@ class ImportExcerpts {
                 context.script.sh(script: "set +x; java -jar " +
                         "-DREDASH_URL=${context.redash.viewerUrl} " +
                         "-DREDASH_API_KEY=${context.redash.viewerApiKey} " +
-                        "-DPOSTGRES_PASSWORD=${context.citus.excerptExporterPass} " +
-                        "-DPOSTGRES_USER=${context.citus.excerptExporterUser} " +
+                        "-DPOSTGRES_PASSWORD=${context.postgres.excerptExporterPass} " +
+                        "-DPOSTGRES_USER=${context.postgres.excerptExporterUser} " +
                         "-DDB_NAME=${EXCERPTS_DB_NAME} " +
-                        "-DDB_URL=${context.citus.CITUS_MASTER_URL} " +
-                        "-DDB_PORT=${context.citus.CITUS_MASTER_PORT} " +
-                        "-DPWD_ADMIN=${context.citus.analyticsAdminRolePass} " +
-                        "-DPWD_AUDITOR=${context.citus.auditRolePass} " +
+                        "-DDB_URL=${context.postgres.OPERATIONAL_MASTER_URL} " +
+                        "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
+                        "-DPWD_ADMIN=${context.postgres.analyticsAdminRolePass} " +
+                        "-DPWD_AUDITOR=${context.postgres.auditRolePass} " +
                         "-DCEPH_BUCKET=${excerptBucket.cephBucketName} " +
                         "-DCEPH_HTTP_ENDPOINT=${excerptBucket.cephHttpEndpoint} " +
                         "-DCEPH_ACCESS_KEY=${excerptBucket.cephAccessKey} " +
