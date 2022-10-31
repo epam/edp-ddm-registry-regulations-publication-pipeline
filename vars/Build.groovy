@@ -42,6 +42,9 @@ void call() {
             context.namespace = context.getParameterValue("CI_NAMESPACE")
             context.logger.debug("Current namespace: ${context.namespace}")
 
+            context.deploymentMode = context.getDeploymentMode(context.namespace)
+            context.logger.debug("Current deployment mode: ${context.deploymentMode}")
+
             context.platform = new PlatformFactory(context).getPlatformImpl()
             context.logger.debug("Current platform: ${context.platform.class.name}")
 

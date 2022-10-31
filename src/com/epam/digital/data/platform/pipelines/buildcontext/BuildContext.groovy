@@ -44,6 +44,7 @@ class BuildContext {
     public Codebase codebase
     public String dnsWildcard
     public String namespace
+    public String deploymentMode
 
     public Registry registry
     public LinkedHashMap<String, DataComponent> dataComponents
@@ -81,6 +82,10 @@ class BuildContext {
 
     String getLogLevel() {
         return script.env["LOG_LEVEL"] ? script.env["LOG_LEVEL"] : "INFO"
+    }
+
+    String getDeploymentMode(String namespace) {
+        return script.sh(script: "helm get values registry-configuration -n $namespace | grep 'deploymentMode: ' | awk '{print \$2}'", returnStdout: true).trim()
     }
 
     String getParameterValue(String paramName, String defaultValue = null) {
