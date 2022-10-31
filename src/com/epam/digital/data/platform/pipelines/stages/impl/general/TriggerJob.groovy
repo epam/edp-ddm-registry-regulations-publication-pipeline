@@ -32,7 +32,8 @@ class TriggerJob {
                 [$class: 'StringParameterValue', name: 'DEFAULT_BRANCH', value: context.codebase.defaultBranch],
                 [$class: 'StringParameterValue', name: 'BRANCH', value: context.codebase.branch],
                 [$class: 'StringParameterValue', name: 'REPOSITORY_PATH', value: context.codebase.repositoryPath],
-                [$class: 'StringParameterValue', name: 'GIT_CREDENTIALS_ID', value: context.gitServer.credentialsId]
+                [$class: 'StringParameterValue', name: 'GIT_CREDENTIALS_ID', value: context.gitServer.credentialsId],
+                [$class: 'StringParameterValue', name: 'DEPLOYMENT_MODE', value: context.deploymentMode]
         ]
     }
 }

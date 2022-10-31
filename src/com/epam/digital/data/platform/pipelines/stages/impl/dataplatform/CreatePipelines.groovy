@@ -38,6 +38,7 @@ class CreatePipelines {
                             [$class: 'StringParameterValue', name: 'BRANCH', value: dataComponent.codebaseBranch],
                             [$class: 'StringParameterValue', name: 'REPOSITORY_PATH', value: dataComponent.repositoryPath],
                             [$class: 'StringParameterValue', name: 'GIT_CREDENTIALS_ID', value: context.gitServer.credentialsId],
+                            [$class: 'StringParameterValue', name: 'DEPLOYMENT_MODE', value: context.deploymentMode],
                     ]
                 }
             }

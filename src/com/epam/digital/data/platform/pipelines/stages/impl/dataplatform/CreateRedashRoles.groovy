@@ -26,14 +26,19 @@ class CreateRedashRoles {
     BuildContext context
 
     private final String REDASH_PUBLISHER_JAR = "/home/jenkins/report-publisher/report-publisher.jar"
+    public String deploymentMode
 
     void run() {
+        this.deploymentMode = context.getParameterValue("DEPLOYMENT_MODE", "development")
+
         if (context.registryRegulations.filesToDeploy.get(RegulationType.ROLES)) {
             context.logger.info("Creating redash ${RegulationType.ROLES.value}")
 
-            context.logger.info("Creating admin role on replica for redash admin instance")
-            createRoles("admin", context.redash.adminUrl, context.redash.adminApiKey)
-            context.logger.info("Admin role has been successfully created")
+            if (deploymentMode.equals("development")) {
+                context.logger.info("Creating admin role on replica for redash admin instance")
+                createRoles("admin", context.redash.adminUrl, context.redash.adminApiKey)
+                context.logger.info("Admin role has been successfully created")
+            }
 
             context.logger.info("Creating rest of roles on replica for redash viewer instance")
             createRoles("roles", context.redash.viewerUrl, context.redash.viewerApiKey)

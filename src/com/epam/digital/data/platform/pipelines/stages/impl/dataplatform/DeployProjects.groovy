@@ -59,6 +59,12 @@ class DeployProjects {
                     if (disableRequestsLimits != null) {
                         parametersMap.put("global.disableRequestsLimits", disableRequestsLimits)
                     }
+
+                    String deploymentMode = platformValuesPath["global"]["deploymentMode"]
+                    if (deploymentMode != null) {
+                        parametersMap.put("global.deploymentMode", deploymentMode)
+                    }
+
                     String fileParameters = ""
                     String dataComponentNameNormalized = dataComponent.name.replace('-','').replace('api',"Api")
                     if (platformValuesPath.global.registry?."${dataComponentNameNormalized}") {

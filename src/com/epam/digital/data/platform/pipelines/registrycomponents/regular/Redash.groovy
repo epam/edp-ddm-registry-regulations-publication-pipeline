@@ -34,6 +34,8 @@ class Redash {
     public String viewerApiKey
     public String adminApiKey
 
+    public String deploymentMode
+
     LinkedHashMap redashSecretJson
 
     Redash(BuildContext context) {
@@ -41,46 +43,41 @@ class Redash {
     }
 
     void init() {
+        this.deploymentMode = context.getParameterValue("DEPLOYMENT_MODE", "development")
         viewerUrl = "http://redash-viewer"
         adminUrl = "http://redash-admin"
         redashSecretJson = context.platform.getAsJson("secret", REDASH_API_KEY_SECRET)["data"]
-        viewerApiKey = DecodeHelper.decodeBase64(redashSecretJson[VIEWER_KEY_JSON_PATH])
-        adminApiKey = DecodeHelper.decodeBase64(redashSecretJson[ADMIN_KEY_JSON_PATH])
         context.script.retry(5) {
-            initApiKeys()
+            viewerApiKey = DecodeHelper.decodeBase64(redashSecretJson[VIEWER_KEY_JSON_PATH])
+            initApiKeys("viewer", VIEWER_KEY_JSON_PATH, viewerUrl, viewerApiKey)
+            if (deploymentMode.equals("development")) {
+                adminApiKey = DecodeHelper.decodeBase64(redashSecretJson[ADMIN_KEY_JSON_PATH])
+                initApiKeys("admin", ADMIN_KEY_JSON_PATH, adminUrl, adminApiKey)
+            }
         }
     }
 
-    private void initApiKeys() {
+    private void initApiKeys(String redashElement, String keyJsonPath, String redashElementUrl, String apiKey) {
         boolean isKeysRegenerated = false
-        def adminResponse = context.script.httpRequest url: "${adminUrl}/api/users",
+        def response = context.script.httpRequest url: "${redashElementUrl}/api/users",
                 httpMode: "GET",
-                customHeaders: [[name: "authorization", value: adminApiKey, maskValue: true]],
+                customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200,404"
-        context.logger.debug("Redash admin response: ${adminResponse.content}")
-        def viewerResponse = context.script.httpRequest url: "${viewerUrl}/api/users",
-                httpMode: "GET",
-                customHeaders: [[name: "authorization", value: viewerApiKey, maskValue: true]],
-                consoleLogResponseBody: context.logLevel == "DEBUG",
-                quiet: context.logLevel != "DEBUG",
-                validResponseCodes: "200,404"
-        context.logger.debug("Redash viewer response: ${viewerResponse.content}")
+        context.logger.debug("Redash ${redashElement} response: ${response.content}")
 
-        if (adminResponse.getStatus() == 404) {
-            context.logger.info("Redash admin api key is no more valid or not yet initialised")
-            adminApiKey = DecodeHelper.decodeBase64(patchRedashSecret(adminUrl, REDASH_SETUP_SECRET, ADMIN_KEY_JSON_PATH))
+        if (response.getStatus() == 404) {
+            context.logger.info("Redash ${redashElement} api key is no more valid or not yet initialised")
+            if ("${redashElement}" == "viewer") {
+                viewerApiKey = DecodeHelper.decodeBase64(patchRedashSecret(redashElementUrl, REDASH_SETUP_SECRET, keyJsonPath))
+            }
+            if ("${redashElement}" == "admin") {
+                adminApiKey = DecodeHelper.decodeBase64(patchRedashSecret(redashElementUrl, REDASH_SETUP_SECRET, keyJsonPath))
+            }
             isKeysRegenerated = true
         } else {
-            context.logger.info("Redash api key secret is up to date for admin")
-        }
-        if (viewerResponse.getStatus() == 404) {
-            context.logger.info("Redash viewer api key is no more valid or not yet initialised")
-            viewerApiKey = DecodeHelper.decodeBase64(patchRedashSecret(viewerUrl, REDASH_SETUP_SECRET, VIEWER_KEY_JSON_PATH))
-            isKeysRegenerated = true
-        } else {
-            context.logger.info("Redash api key secret is up to date for viewer")
+            context.logger.info("Redash api key secret is up to date for ${redashElement}")
         }
         if (isKeysRegenerated)
             restartRedashExporterPod()
