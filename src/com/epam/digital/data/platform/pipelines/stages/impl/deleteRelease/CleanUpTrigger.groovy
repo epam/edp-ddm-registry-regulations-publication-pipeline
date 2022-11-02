@@ -33,6 +33,16 @@ class CleanUpTrigger {
             getCurrentCodebaseCRs("codebase")
             getCurrentCodebaseCRs("codebasebranch")
 
+            parallelDeletion["clearDataFromRegulationManagement"] = {
+                ArrayList registryRegulationManagementPods = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
+                        "-o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}' -n ${context.namespace}", returnStdout: true).tokenize('\n')
+                String registryRegulationManagementPodRepositoriesData = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
+                        "-o jsonpath='{.items[*].spec.containers[*].volumeMounts[?(@.name==\"repositories-data\")].mountPath}' -n ${context.namespace}", returnStdout: true).trim()
+
+                registryRegulationManagementPods.each { pod ->
+                    context.script.sh(script: "kubectl exec -n ${context.namespace} ${pod} -c registry-regulation-management -- bash -c \'rm -rf ${registryRegulationManagementPodRepositoriesData}/*\'")
+                }
+            }
             parallelDeletion["removeDataServices"] = {
                 context.logger.info("Removing Data Services codebasebranches")
                 context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
