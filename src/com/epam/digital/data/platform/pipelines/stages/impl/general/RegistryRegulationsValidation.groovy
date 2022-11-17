@@ -41,6 +41,8 @@ class RegistryRegulationsValidation {
                 "--roles-files=${context.registryRegulations.getAllRegulations(RegulationType.ROLES).join(",")} " +
                 "--liquibase-files=data-model/main-liquibase.xml " +
                 "--datafactory-settings-files=${context.registry.SETTINGS_FILE} " +
+                "--email-notification-template-folder=notifications/email " +
+                "--inbox-notification-template-folder=notifications/inbox " +
                 "--diia-notification-template-folder=notifications/diia " +
                 "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv "
 
