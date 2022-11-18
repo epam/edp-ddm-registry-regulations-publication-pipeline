@@ -146,15 +146,13 @@ class Redash {
             int dashboardCount = parsedJson["count"]
             dashboardCount.times {
                 int dashboard_id = parsedJson["results"][it]["id"]
-                if (dashboard_id > 3) {
-                    context.logger.info("Removing not audit dashboards: " + parsedJson["results"][it]["name"])
+                    context.logger.info("Removing dashboard: " + parsedJson["results"][it]["name"])
                     context.script.httpRequest url: "${url}/${dashboard_id}",
                             httpMode: "DELETE",
                             customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
                             consoleLogResponseBody: context.logLevel == "DEBUG",
                             quiet: context.logLevel != "DEBUG",
                             validResponseCodes: "200,204"
-                }
             }
         } else {
             int resourcesCount = parsedJson.size()
