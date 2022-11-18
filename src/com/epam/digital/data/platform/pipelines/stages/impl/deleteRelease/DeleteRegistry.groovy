@@ -62,14 +62,16 @@ class DeleteRegistry {
             context.logger.info("Removing analytics roles from db")
             LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
             officerUsersYaml["roles"].each { String role ->
-                try {
-                    context.postgres.psqlCommand(context.postgres.masterRepPod,
-                            "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name, context.postgres.analytical_pg_user)
-                } catch (any) {
-                    if (context.postgres.psqlCommand(context.postgres.masterRepPod,
-                            "SELECT 1 FROM pg_roles WHERE rolname='analytics_${role["name"]}';",
-                            context.registry.name, context.postgres.analytical_pg_user).trim() == '1') {
-                        context.script.error("Removing of analytic role $role from database $context.registry.name FAILED")
+                if (role != null) {
+                    try {
+                        context.postgres.psqlCommand(context.postgres.masterRepPod,
+                                "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name, context.postgres.analytical_pg_user)
+                    } catch (any) {
+                        if (context.postgres.psqlCommand(context.postgres.masterRepPod,
+                                "SELECT 1 FROM pg_roles WHERE rolname='analytics_${role["name"]}';",
+                                context.registry.name, context.postgres.analytical_pg_user).trim() == '1') {
+                            context.script.error("Removing of analytic role $role from database $context.registry.name FAILED")
+                        }
                     }
                 }
             }
@@ -86,6 +88,8 @@ class DeleteRegistry {
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",
                     context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
+            context.logger.info("Remove audit dashboards job")
+            context.script.sh(script: "oc delete job create-dashboard-job -n $context.namespace")
         }
         parallelDeletion["removeKafkaTopics"] = {
             String kafkaBrokerPod = "kafka-cluster-kafka-0"

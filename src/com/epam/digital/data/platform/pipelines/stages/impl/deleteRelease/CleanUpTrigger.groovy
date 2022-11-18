@@ -30,9 +30,9 @@ class CleanUpTrigger {
             LinkedHashMap parallelDeletion = [:]
 
             context.logger.info("Get current codebase and codebasebranch CRs")
-            getCurrentCodebaseCRs("codebase")
-            getCurrentCodebaseCRs("codebasebranch")
-
+            getCurrentCodebaseCRs("codebase", "recreateByCleanup=true")
+            getCurrentCodebaseCRs("codebasebranch", "recreateByCleanup=true")
+            getCurrentCodebaseCRs("job", "job-name=create-dashboard-job")
             parallelDeletion["clearDataFromRegulationManagement"] = {
                 ArrayList registryRegulationManagementPods = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
                         "-o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}' -n ${context.namespace}", returnStdout: true).tokenize('\n')
@@ -73,19 +73,29 @@ class CleanUpTrigger {
                 }
             }
 
-            context.logger.info("Creating ${context.codebase.name} codebase and codebasebranch CRs")
-            ["codebase", "codebasebranch"].each {
-                context.platform.apply("${context.codebase.name}-${context.codebase.historyName}-${it}.json")
+            context.logger.info("Creating ${context.codebase.name} codebase, codebasebranch and redash job")
+            ["codebase", "codebasebranch", "job"].each {
+                context.platform.apply("resources-${it}.json")
             }
         }
     }
 
-    void getCurrentCodebaseCRs(String CrName) {
-        String fileName = "${context.codebase.name}-${context.codebase.historyName}-${CrName}.json"
-        String currentCr = context.script.sh(script: "oc get $CrName -l recreateByCleanup=true -o json | " +
-                "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
-                ".items[].metadata.selfLink,.items[].metadata.ownerReferences,.items[].metadata.creationTimestamp," +
-                ".items[].metadata.generation,.items[].metadata.finalizers,.items[].status)'", returnStdout: true)
+    void getCurrentCodebaseCRs(String resourceType, String label) {
+        String fileName = "resources-${resourceType}.json"
+        String currentCr
+        if (resourceType == 'job') {
+            currentCr = context.script.sh(script: "oc get $resourceType -l $label -o json | " +
+                    "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
+                    ".items[].metadata.creationTimestamp,.items[].metadata.generation,.items[].metadata.finalizers," +
+                    ".items[].metadata.labels.\"controller-uid\",.items[].spec.selector,.items[].spec.template.metadata.labels.\"controller-uid\"," +
+                    ".items[].status)'", returnStdout: true)
+        } else {
+            currentCr = context.script.sh(script: "oc get $resourceType -l $label -o json | " +
+                    "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
+                    ".items[].metadata.selfLink,.items[].metadata.ownerReferences,.items[].metadata.creationTimestamp," +
+                    ".items[].metadata.generation,.items[].metadata.finalizers,.items[].status)'", returnStdout: true)
+        }
         context.script.writeFile(file: fileName, text: currentCr)
+
     }
 }
