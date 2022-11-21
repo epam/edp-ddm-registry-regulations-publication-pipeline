@@ -62,9 +62,11 @@ class Gerrit extends GitServer {
 
     void deleteRepoCli(String repoName) {
         context.script.sshagent(["${credentialsId}"]) {
-            context.script.sh(script: "ssh -oStrictHostKeyChecking=no " +
-                    "-p ${sshPort} ${autouser}@${host} " +
-                    "delete-project delete --yes-really-delete --force ${repoName}")
+            if (isRepositoryExists(repoName)) {
+                context.script.sh(script: "ssh -oStrictHostKeyChecking=no " +
+                        "-p ${sshPort} ${autouser}@${host} " +
+                        "delete-project delete --yes-really-delete --force ${repoName}")
+            }
         }
     }
 }
