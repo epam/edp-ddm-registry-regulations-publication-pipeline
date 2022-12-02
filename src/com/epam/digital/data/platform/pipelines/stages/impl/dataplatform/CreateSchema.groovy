@@ -33,7 +33,10 @@ class CreateSchema {
 
     void run() {
         try {
-            context.script.sh(script: "oc rsync data-model/data-load ${context.postgres.masterPod}:/tmp")
+            context.platform.podExec(context.postgres.masterPod, "bash -c 'mkdir /pgdata/data-load && " +
+                    "ln -s /pgdata/data-load/ /tmp/data-load || :'", "database")
+            context.script.sh(script: "oc rsync data-model/data-load ${context.postgres.masterPod}:/pgdata")
+
         }
         catch (any) {
             context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
@@ -96,6 +99,9 @@ class CreateSchema {
                 regVersion: context.registry.version,
                 username: context.postgres.analytical_pg_user,
                 password: context.postgres.analytical_pg_password)
+
+        context.platform.podExec(context.postgres.masterPod, "bash -c 'rm -rf /pgdata/data-load && " +
+                "rm /tmp/data-load || :'", "database")
 
     }
 
