@@ -33,8 +33,9 @@ class CreateSchema {
 
     void run() {
         try {
-            context.platform.podExec(context.postgres.masterPod, "bash -c 'mkdir /pgdata/data-load && " +
-                    "ln -s /pgdata/data-load/ /tmp/data-load || :'", "database")
+            removeDataLoadFiles()
+            context.platform.podExec(context.postgres.masterPod, "bash -c 'mkdir /pgdata/data-load'", "database")
+            context.platform.podExec(context.postgres.masterPod, "bash -c 'ln -s /pgdata/data-load/ /tmp/data-load'", "database")
             context.script.sh(script: "oc rsync data-model/data-load ${context.postgres.masterPod}:/pgdata")
 
         }
@@ -100,9 +101,7 @@ class CreateSchema {
                 username: context.postgres.analytical_pg_user,
                 password: context.postgres.analytical_pg_password)
 
-        context.platform.podExec(context.postgres.masterPod, "bash -c 'rm -rf /pgdata/data-load && " +
-                "rm /tmp/data-load || :'", "database")
-
+        removeDataLoadFiles()
     }
 
     private void runLiquibase(LinkedHashMap params) {
@@ -125,4 +124,16 @@ class CreateSchema {
                 "-Dreg_version=${params.get("regVersion", "")} " +
                 "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
     }
+
+    private void removeDataLoadFiles() {
+        String dataLoadPath = "/pgdata/data-load"
+        String symlinkPath = "/tmp/data-load"
+        if (context.platform.podExec(context.postgres.masterPod, "bash -c 'if [[ -d \"/pgdata/data-load\" ]] || [[ -L \"/tmp/data-load\" ]]; then echo true; fi'", "database").toBoolean()) {
+            context.platform.podExec(context.postgres.masterPod, "bash -c 'rm -rf $dataLoadPath || :'", "database")
+            context.platform.podExec(context.postgres.masterPod, "bash -c 'rm $symlinkPath || :'", "database")
+        } else {
+            context.logger.info("There are no data-load files to remove")
+        }
+    }
+
 }
