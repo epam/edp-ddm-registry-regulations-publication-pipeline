@@ -35,6 +35,8 @@ interface IPlatform {
 
     boolean patch(String resource, String name, String jsonpath)
 
+    void patchByLabel(String resource, String label, String jsonpath)
+
     void create(String resource, String name, String parameters)
 
     void annotate(String resource, String name, String key, String value, boolean overwrite)

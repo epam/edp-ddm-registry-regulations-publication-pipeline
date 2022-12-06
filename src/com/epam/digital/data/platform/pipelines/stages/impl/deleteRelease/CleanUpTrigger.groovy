@@ -45,21 +45,45 @@ class CleanUpTrigger {
             }
             parallelDeletion["removeDataServices"] = {
                 context.logger.info("Removing Data Services codebasebranches")
-                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
-                context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
+                try {
+                    context.script.timeout(unit: 'MINUTES', time: 10) {
+                        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
+                        context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
+                    }
+                } catch (any) {
+                    context.logger.info("Cannot gracefully remove data services codebase and codebasebranch CRs")
+                    context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                    context.platform.patchByLabel(Codebase.CODEBASE_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                }
             }
             parallelDeletion["removeRegistryRegulation"] = {
                 context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
-                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
-                context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+                try {
+                    context.script.timeout(unit: 'MINUTES', time: 10) {
+                        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
+                        context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+                    }
+                } catch (any) {
+                    context.logger.info("Cannot gracefully remove registry-regulations codebase and codebasebranch CRs")
+                    context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.name", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                    context.platform.patch(Codebase.CODEBASE_CR, context.codebase.name, "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                }
                 context.logger.info("Removing ${context.codebase.name} repo")
                 context.gitServer.deleteRepository(context.codebase.name)
             }
 
             parallelDeletion["removeHistoryExcerptor"] = {
                 context.logger.info("Removing history-excerptor codebasebranch and codebase CRs")
-                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.historyName")
-                context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
+                try {
+                    context.script.timeout(unit: 'MINUTES', time: 10) {
+                        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.historyName")
+                        context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
+                    }
+                } catch (any) {
+                    context.logger.info("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
+                    context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.historyName", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                    context.platform.patch(Codebase.CODEBASE_CR, context.codebase.historyName, "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                }
             }
             context.script.parallel(parallelDeletion)
 

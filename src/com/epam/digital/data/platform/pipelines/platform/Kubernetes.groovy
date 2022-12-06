@@ -85,6 +85,15 @@ class Kubernetes implements IPlatform {
     }
 
     @Override
+    void patchByLabel(String resource, String label, String jsonpath) {
+        ArrayList resourcesList = context.script.sh(script: "kubectl get ${resource} -l ${label} " +
+                "-o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'", returnStdout: true).tokenize('\n')
+        resourcesList.each {resourceName ->
+            context.script.sh(script: "${CLI} patch ${resource} ${resourceName} --type merge -p ${jsonpath} || true")
+        }
+    }
+
+    @Override
     void create(String resource, String name, String parameters = "") {
         context.script.sh(script: "${CLI} create ${resource} ${name} ${parameters}")
     }
