@@ -65,6 +65,10 @@ class DeployProjects {
                         parametersMap.put("global.deploymentMode", deploymentMode)
                     }
 
+                    if (context.keycloakCustomHost != null) {
+                        parametersMap.put("keycloak.customHost", context.keycloakCustomHost)
+                    }
+
                     String fileParameters = ""
                     String dataComponentNameNormalized = dataComponent.name.replace('-','').replace('api',"Api")
                     if (platformValuesPath.global.registry?."${dataComponentNameNormalized}") {
