@@ -20,6 +20,7 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
+import groovy.json.JsonSlurperClassic
 
 @Stage(name = "cleanup-trigger", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class CleanUpTrigger {
@@ -74,6 +75,10 @@ class CleanUpTrigger {
                 context.script.error("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
             }
         }
+        parallelDeletion["cleanUpNexus"] = {
+            context.logger.info("Remove artifacts from Nexus repositories")
+            trigerManualNexusTask()
+        }
         context.script.parallel(parallelDeletion)
 
         context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
@@ -121,5 +126,24 @@ class CleanUpTrigger {
         }
         context.script.writeFile(file: fileName, text: currentCr)
 
+    }
+    void trigerManualNexusTask() {
+        String taskType = "repository.cleanup"
+        String nexusUrl = "http://nexus:8081/nexus/service/rest/v1/tasks"
+        String nexusCredentialsId = context.dockerRegistry.NEXUS_CI_USER_SECRET
+        def taskId = ""
+        def nexusGetResponse = context.script.httpRequest url: nexusUrl ,
+                httpMode: 'GET',
+                authentication: nexusCredentialsId,
+                validResponseCodes: '200,404',
+                quiet: true
+        if (nexusGetResponse.status.equals(200))
+            taskId = new JsonSlurperClassic().parseText(nexusGetResponse.content).items.findAll{ it.type.equals(taskType)}.id[0]
+        context.script.httpRequest url: nexusUrl + "/" + taskId + "/run",
+                httpMode: 'POST',
+                authentication: nexusCredentialsId,
+                customHeaders: [[name: 'Content-Type', value: "application/json"]],
+                validResponseCodes: '204',
+                quiet: true
     }
 }
