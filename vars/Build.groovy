@@ -84,6 +84,7 @@ void call() {
             context.logger.debug("Initialized Keycloak: ${context.keycloak.toString()}")
             context.jenkinsDeployer = new KeycloakClient(context)
             context.jenkinsDeployer.init("admin", "jenkins-deployer", "jenkins-keycloak-client")
+            context.keycloakCustomHost = context.getKeycloakCustomUrl(context.namespace)
         }
     }
 
