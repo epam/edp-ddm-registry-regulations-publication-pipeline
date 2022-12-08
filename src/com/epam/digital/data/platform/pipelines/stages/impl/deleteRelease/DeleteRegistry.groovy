@@ -106,7 +106,11 @@ class DeleteRegistry {
                     context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
             context.logger.info("Remove audit dashboards job")
-            context.script.sh(script: "oc delete job create-dashboard-job -n $context.namespace")
+            try {
+                context.script.sh(script: "oc delete job create-dashboard-job -n $context.namespace")
+            } catch (any) {
+                context.logger.info("Audit dashboards job removed already")
+            }
         }
         parallelDeletion["removeKafkaTopics"] = {
             String kafkaBrokerPod = "kafka-cluster-kafka-0"
