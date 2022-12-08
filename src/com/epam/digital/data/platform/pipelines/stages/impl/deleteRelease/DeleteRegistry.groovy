@@ -39,7 +39,7 @@ class DeleteRegistry {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 0)
             Map binding = ["OWNER_ROLE": context.postgres.ownerRole]
 
-            context.logger.info("Copy DB scripts on postgres clusters")
+            context.logger.info("Copy DB scripts on postgres master and replica")
             String template = context.script.libraryResource("sql/${CLEANUP_REGISTRY_SQL}")
             context.script.writeFile(file: "sql/${CLEANUP_REGISTRY_SQL}", text: TemplateRenderer.renderTemplate(template, binding))
             String cleanupProcessHistorySqlResource = context.script.libraryResource("sql/${CLEANUP_PROCESS_HISTORY_SQL}")
@@ -47,36 +47,19 @@ class DeleteRegistry {
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterRepPod}:/tmp/")
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterPod}:/tmp/")
 
-            context.logger.info("Cleaning registry DB on analytical cluster")
-            String srsubState = context.postgres.psqlCommand(context.postgres.masterRepPod,
-                    "select count(*)from pg_subscription_rel where srsubstate <> 'r';",
-                    context.registry.name, context.postgres.analytical_pg_user).trim()
-            if (srsubState != '0') {
-                context.postgres.psqlCommand(context.postgres.masterRepPod,
-                        "alter subscription operational_sub refresh publication;",
-                        context.registry.name, context.postgres.analytical_pg_user)
-                context.postgres.psqlCommand(context.postgres.masterRepPod,
-                                "alter subscription operational_sub enable",
-                        context.registry.name, context.postgres.analytical_pg_user)
-            }
-            String isSubenabled = context.postgres.psqlCommand(context.postgres.masterRepPod,
-                    "select subenabled from pg_subscription;",
-                    context.registry.name, context.postgres.analytical_pg_user).trim()
-            if (isSubenabled == 't') {
-                context.postgres.psqlScript(context.postgres.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.analytical_pg_user, "-d ${context.registry.name}")
-            } else {
-                context.logger.error("Subscription operational_sub is disabled on analytical master!")
-            }
-            context.logger.info("Cleaning registry DB on operational cluster")
+            context.logger.info("Cleaning registry DB on replica")
+            context.postgres.psqlScript(context.postgres.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.analytical_pg_user, "-d ${context.registry.name}")
+
+            context.logger.info("Cleaning registry DB on master")
             context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.operational_pg_user, "-d ${context.registry.name}")
 
-            context.logger.info("Cleaning process_history DB on operational cluster")
+            context.logger.info("Cleaning process_history DB on master")
             context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_PROCESS_HISTORY_SQL}", context.postgres.operational_pg_user)
 
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
 
-            context.logger.info("Removing analytics roles from registry db on analytical cluster")
+            context.logger.info("Removing analytics roles from db")
             LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
             officerUsersYaml["roles"].each { String role ->
                 if (role != null) {
