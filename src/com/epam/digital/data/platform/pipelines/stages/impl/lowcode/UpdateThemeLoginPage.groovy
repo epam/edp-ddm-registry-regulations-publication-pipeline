@@ -30,13 +30,24 @@ class UpdateThemeLoginPage {
             String GLOBAL_VARS_FILE = "${RegulationType.GLOBAL_VARS.value}/camunda-global-system-vars.yml"
             String themeFile = context.script.readYaml(file: GLOBAL_VARS_FILE)["themeFile"]
             if (themeFile) {
-                ["officer", "citizen"].each {
-                    String authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", "-o yaml")
-                    String tmpFile = "tmp-${it}.yml"
-                    context.script.writeFile(file: tmpFile, text: authFlowYaml)
-                    context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
-                    context.platform.apply(tmpFile)
-                    context.script.sh("rm -f ${tmpFile}")
+                String idGovUaOfficerAuthFlow = "id-gov-ua-officer"
+                String authFlowYaml
+                ["officer", "citizen", idGovUaOfficerAuthFlow].each {
+                    if (it == idGovUaOfficerAuthFlow && context.platform.checkObjectExists("keycloakauthflow", idGovUaOfficerAuthFlow)) {
+                        authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", idGovUaOfficerAuthFlow, "-o yaml --ignore-not-found=true")
+                    }
+                    if (it == "officer" || it == "citizen") {
+                        authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", "-o yaml --ignore-not-found=true")
+                    }
+                    try {
+                        String tmpFile = "tmp-${it}.yml"
+                        context.script.writeFile(file: tmpFile, text: authFlowYaml)
+                        context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
+                        context.platform.apply(tmpFile)
+                        context.script.sh("rm -f ${tmpFile}")
+                    } catch (any) {
+                        context.logger.info("Failed to apply tmp-${it}.yml")
+                    }
                 }
             } else {
                 context.logger.info("Theme file is not set, using default")
