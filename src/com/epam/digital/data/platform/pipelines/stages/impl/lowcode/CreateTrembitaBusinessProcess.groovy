@@ -100,9 +100,9 @@ class CreateTrembitaBusinessProcess {
                     String serviceDestination = "external-systems-configuration.yaml"
                     trembitaYaml["external-systems"].each() { service ->
                         ArrayList<String> serviceUrl = []
-                        serviceUrl.add("${service.getValue()["url"].replaceAll("http(s)?://|www\\.|/.*", "")}")
+                        serviceUrl.add("${service.getValue()["url"].replaceAll("http(s)?://|/.*", "")}")
                         if (service.getValue()["auth"]["partner-token-auth-url"])
-                            serviceUrl.add(service.getValue()["auth"]["partner-token-auth-url"].replaceAll("http(s)?://|www\\.|/.*", ""))
+                            serviceUrl.add(service.getValue()["auth"]["partner-token-auth-url"].replaceAll("http(s)?://|/.*", ""))
                         LinkedHashMap<String, String> serviceBinding = [
                                 "serviceName": service.getKey(),
                                 "serviceUrl" : serviceUrl
