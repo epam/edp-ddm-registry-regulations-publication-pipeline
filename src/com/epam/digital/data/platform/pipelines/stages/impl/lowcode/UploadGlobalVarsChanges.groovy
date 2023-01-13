@@ -32,14 +32,14 @@ class UploadGlobalVarsChanges {
                 context.logger.info("Updating camunda global vars")
                 String CAMUNDA_GLOBAL_VARS_FILE = "camunda-global-system-vars.yml"
                 String camundaGlobalVarsYaml = "camunda:\\n  system-variables:\\n" +
-                        "${context.script.sh(script: """x=4; awk '{gsub(/^[ \t\r\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
+                        "${context.script.sh(script: """x=4; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
                 context.bpmsConfigMapsChanged["globalVars"] = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
                         CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml)
                 context.logger.info("Camunda global have been successfully updated")
 
                 context.logger.info("Updating registry env variables for portals")
-                String asJson = context.script.sh(script: """x=2; awk '{gsub(/^[ \t\r\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s%s\\n", "", \$0, ","}' \
+                String asJson = context.script.sh(script: """x=2; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s%s\\n", "", \$0, ","}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true)
                         .replaceAll("\n", "\\\\n")
                         .replaceAll(': ', ': \'')
