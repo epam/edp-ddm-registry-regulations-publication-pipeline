@@ -10,6 +10,11 @@ truncate table only ddm_liquibase_metadata;
 -- restart sequence ddm_liquibase_metadata_metadata_id_seq
 alter sequence ddm_liquibase_metadata_metadata_id_seq restart;
 
+-- clean table ddm_rls_metadata
+truncate table only ddm_rls_metadata;
+-- restart sequence ddm_rls_metadata_rls_id_seq
+alter sequence ddm_rls_metadata_rls_id_seq restart;
+
 -- clean table ddm_role_permission
 truncate table only ddm_role_permission;
 -- restart sequence ddm_role_permission_permission_id_seq
