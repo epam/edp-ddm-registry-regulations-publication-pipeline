@@ -26,81 +26,87 @@ class CleanUpTrigger {
     BuildContext context
 
     void run() {
-        context.script.timeout(unit: 'MINUTES', time: 30) {
-            LinkedHashMap parallelDeletion = [:]
 
-            context.logger.info("Get current codebase and codebasebranch CRs")
-            getCurrentCodebaseCRs("codebase", "recreateByCleanup=true")
-            getCurrentCodebaseCRs("codebasebranch", "recreateByCleanup=true")
-            getCurrentCodebaseCRs("job", "job-name=create-dashboard-job")
-            parallelDeletion["clearDataFromRegulationManagement"] = {
-                ArrayList registryRegulationManagementPods = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
-                        "-o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}' -n ${context.namespace}", returnStdout: true).tokenize('\n')
-                String registryRegulationManagementPodRepositoriesData = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
-                        "-o jsonpath='{.items[*].spec.containers[*].volumeMounts[?(@.name==\"repositories-data\")].mountPath}' -n ${context.namespace}", returnStdout: true).trim()
+        LinkedHashMap parallelDeletion = [:]
 
-                registryRegulationManagementPods.each { pod ->
-                    context.script.sh(script: "kubectl exec -n ${context.namespace} ${pod} -c registry-regulation-management -- bash -c \'rm -rf ${registryRegulationManagementPodRepositoriesData}/*\'")
-                }
-            }
-            parallelDeletion["removeDataServices"] = {
-                context.logger.info("Removing Data Services codebasebranches")
-                try {
-                    context.script.timeout(unit: 'MINUTES', time: 10) {
-                        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
-                        context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
-                    }
-                } catch (any) {
-                    context.logger.info("Cannot gracefully remove data services codebase and codebasebranch CRs")
-                    context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                    context.platform.patchByLabel(Codebase.CODEBASE_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                }
-            }
-            parallelDeletion["removeRegistryRegulation"] = {
-                context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
-                try {
-                    context.script.timeout(unit: 'MINUTES', time: 10) {
-                        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
-                        context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
-                    }
-                } catch (any) {
-                    context.logger.info("Cannot gracefully remove registry-regulations codebase and codebasebranch CRs")
-                    context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.name", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                    context.platform.patch(Codebase.CODEBASE_CR, context.codebase.name, "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                }
-                context.logger.info("Removing ${context.codebase.name} repo")
-                context.gitServer.deleteRepository(context.codebase.name)
-            }
+        context.logger.info("Get current codebase and codebasebranch CRs")
+        getCurrentCodebaseCRs("codebase", "recreateByCleanup=true")
+        getCurrentCodebaseCRs("codebasebranch", "recreateByCleanup=true")
+        getCurrentCodebaseCRs("job", "job-name=create-dashboard-job")
 
-            parallelDeletion["removeHistoryExcerptor"] = {
-                context.logger.info("Removing history-excerptor codebasebranch and codebase CRs")
-                try {
-                    context.script.timeout(unit: 'MINUTES', time: 10) {
-                        context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.historyName")
-                        context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
-                    }
-                } catch (any) {
-                    context.logger.info("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
-                    context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.historyName", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                    context.platform.patch(Codebase.CODEBASE_CR, context.codebase.historyName, "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                }
-            }
-            context.script.parallel(parallelDeletion)
+        context.logger.info("Calculate the timeout for cleanup job")
+        int registryRegulationsVersions = context.script.sh(script: "oc -n ${context.namespace} get codebases -o json | " +
+                "jq -r '(.items[] | select(.metadata.name | contains(\"registry-model\")) | .metadata.name )' | wc -l", returnStdout: true).trim().toInteger()
+        int cleanUpTimeout = (registryRegulationsVersions == 0) ? 5 : registryRegulationsVersions * 5
+        context.logger.info("Timeout is $cleanUpTimeout minutes")
 
-            [context.codebase.name, context.codebase.historyName].each {
-                String tmpGerritSecret = "repository-codebase-${it}-temp"
-                if (!context.platform.checkObjectExists("secret", tmpGerritSecret)) {
-                    String edpGerritSecret = "edp-gerrit-ciuser"
-                    context.platform.create("secret generic", tmpGerritSecret,
-                            "--from-literal='username=${context.platform.getSecretValue(edpGerritSecret, "username")}' " +
-                                    "--from-literal='password=${context.platform.getSecretValue(edpGerritSecret, "password")}'")
-                }
-            }
+        parallelDeletion["clearDataFromRegulationManagement"] = {
+            ArrayList registryRegulationManagementPods = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
+                    "-o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}' -n ${context.namespace}", returnStdout: true).tokenize('\n')
+            String registryRegulationManagementPodRepositoriesData = context.script.sh(script: "kubectl get pod -l app=registry-regulation-management " +
+                    "-o jsonpath='{.items[*].spec.containers[*].volumeMounts[?(@.name==\"repositories-data\")].mountPath}' -n ${context.namespace}", returnStdout: true).trim()
 
-            context.logger.info("Creating ${context.codebase.name} codebase, codebasebranch and redash job")
-            ["codebase", "codebasebranch", "job"].each {
-                context.platform.apply("resources-${it}.json")
+            registryRegulationManagementPods.each { pod ->
+                context.script.sh(script: "kubectl exec -n ${context.namespace} ${pod} -c registry-regulation-management -- bash -c \'rm -rf ${registryRegulationManagementPodRepositoriesData}/*\'")
             }
+        }
+
+        parallelDeletion["removeDataServices"] = {
+            context.logger.info("Removing Data Services codebasebranches")
+            try {
+                context.script.timeout(unit: 'MINUTES', time: cleanUpTimeout) {
+                    context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
+                    context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
+                }
+            } catch (any) {
+                context.logger.info("Cannot gracefully remove data services codebase and codebasebranch CRs")
+                context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                context.platform.patchByLabel(Codebase.CODEBASE_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+            }
+        }
+
+        parallelDeletion["removeHistoryExcerptor"] = {
+            context.logger.info("Removing history-excerptor codebasebranch and codebase CRs")
+            try {
+                context.script.timeout(unit: 'MINUTES', time: cleanUpTimeout) {
+                    context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.historyName")
+                    context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
+                }
+            } catch (any) {
+                context.logger.info("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
+                context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.historyName", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                context.platform.patch(Codebase.CODEBASE_CR, context.codebase.historyName, "\'{\"metadata\":{\"finalizers\":[]}}\'")
+            }
+        }
+        context.script.parallel(parallelDeletion)
+
+        context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
+        try {
+            context.script.timeout(unit: 'MINUTES', time: 10) {
+                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
+                context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+            }
+        } catch (any) {
+            context.logger.info("Cannot gracefully remove registry-regulations codebase and codebasebranch CRs")
+            context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.name", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+            context.platform.patch(Codebase.CODEBASE_CR, context.codebase.name, "\'{\"metadata\":{\"finalizers\":[]}}\'")
+        }
+        context.logger.info("Removing ${context.codebase.name} repo")
+        context.gitServer.deleteRepository(context.codebase.name)
+
+        [context.codebase.name, context.codebase.historyName].each {
+            String tmpGerritSecret = "repository-codebase-${it}-temp"
+            if (!context.platform.checkObjectExists("secret", tmpGerritSecret)) {
+                String edpGerritSecret = "edp-gerrit-ciuser"
+                context.platform.create("secret generic", tmpGerritSecret,
+                        "--from-literal='username=${context.platform.getSecretValue(edpGerritSecret, "username")}' " +
+                                "--from-literal='password=${context.platform.getSecretValue(edpGerritSecret, "password")}'")
+            }
+        }
+
+        context.logger.info("Creating ${context.codebase.name} codebase, codebasebranch and redash job")
+        ["codebase", "codebasebranch", "job"].each {
+            context.platform.apply("resources-${it}.json")
         }
     }
 
