@@ -76,6 +76,9 @@ class CleanUpTrigger {
         }
         context.script.parallel(parallelDeletion)
 
+        context.logger.info("Removing temporary version candidate DBs")
+        context.platform.podExec(context.postgres.masterPod, "bash -c 'for el in \$(psql -U${context.postgres.operational_pg_user} -t -c \"SELECT datname FROM pg_database;\" | grep \"registry_dev\"); do PGPASSWORD=\"${context.postgres.operational_pg_password}\" dropdb --force --if-exists -h localhost \$el; done;'", "database")
+
         context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
         try {
             context.script.timeout(unit: 'MINUTES', time: 10) {

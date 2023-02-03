@@ -43,6 +43,10 @@ class PostgresOperator {
     public String excerptExporterPass
     public String ownerRole
     public String ownerRolePass
+    public String regTemplateOwnerRole
+    public String regTemplateOwnerRolePass
+    public String regRegulationRole
+    public String regRegulationRolePass
     public String appRole
     public String appRolePass
     public String analyticsAdminRolePass
@@ -78,6 +82,10 @@ class PostgresOperator {
         adminRolePass = DecodeHelper.decodeBase64(postgresSecretRolesJson["admRolePass"])
         ownerRole = DecodeHelper.decodeBase64(postgresSecretRolesJson["regOwnerName"])
         ownerRolePass = DecodeHelper.decodeBase64(postgresSecretRolesJson["regOwnerPass"])
+        regTemplateOwnerRole = DecodeHelper.decodeBase64(postgresSecretRolesJson["regTemplateOwnerName"])
+        regTemplateOwnerRolePass = DecodeHelper.decodeBase64(postgresSecretRolesJson["regTemplateOwnerPass"])
+        regRegulationRole = DecodeHelper.decodeBase64(postgresSecretRolesJson["regRegulationRoleName"])
+        regRegulationRolePass = DecodeHelper.decodeBase64(postgresSecretRolesJson["regRegulationRolePass"])
         appRole = DecodeHelper.decodeBase64(postgresSecretRolesJson["appRoleName"])
         appRolePass = DecodeHelper.decodeBase64(postgresSecretRolesJson["appRolePass"])
         auditRolePass = DecodeHelper.decodeBase64(postgresSecretRolesJson["anRolePass"])
