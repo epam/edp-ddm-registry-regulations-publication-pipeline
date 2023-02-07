@@ -59,9 +59,7 @@ class CleanUpTrigger {
                     context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
                 }
             } catch (any) {
-                context.logger.info("Cannot gracefully remove data services codebase and codebasebranch CRs")
-                context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                context.platform.patchByLabel(Codebase.CODEBASE_CR, "type=data-component", "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                context.script.error("Cannot gracefully remove data services codebase and codebasebranch CRs")
             }
         }
 
@@ -73,9 +71,7 @@ class CleanUpTrigger {
                     context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
                 }
             } catch (any) {
-                context.logger.info("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
-                context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.historyName", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-                context.platform.patch(Codebase.CODEBASE_CR, context.codebase.historyName, "\'{\"metadata\":{\"finalizers\":[]}}\'")
+                context.script.error("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
             }
         }
         context.script.parallel(parallelDeletion)
@@ -87,9 +83,7 @@ class CleanUpTrigger {
                 context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
             }
         } catch (any) {
-            context.logger.info("Cannot gracefully remove registry-regulations codebase and codebasebranch CRs")
-            context.platform.patchByLabel(Codebase.CODEBASEBRANCH_CR, "affiliatedWith=$context.codebase.name", "\'{\"metadata\":{\"finalizers\":[]}}\'")
-            context.platform.patch(Codebase.CODEBASE_CR, context.codebase.name, "\'{\"metadata\":{\"finalizers\":[]}}\'")
+            context.script.error("Cannot gracefully remove registry-regulations codebase and codebasebranch CRs")
         }
         context.logger.info("Removing ${context.codebase.name} repo")
         context.gitServer.deleteRepository(context.codebase.name)
