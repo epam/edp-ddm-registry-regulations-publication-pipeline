@@ -38,7 +38,7 @@ class CleanUpTrigger {
         context.logger.info("Calculate the timeout for cleanup job")
         int registryRegulationsVersions = context.script.sh(script: "oc -n ${context.namespace} get codebases -o json | " +
                 "jq -r '(.items[] | select(.metadata.name | contains(\"registry-model\")) | .metadata.name )' | wc -l", returnStdout: true).trim().toInteger()
-        int cleanUpTimeout = (registryRegulationsVersions == 0) ? 5 : registryRegulationsVersions * 5
+        int cleanUpTimeout = (registryRegulationsVersions == 0) ? 10 : registryRegulationsVersions * 10
         context.logger.info("Timeout is $cleanUpTimeout minutes")
 
         parallelDeletion["clearDataFromRegulationManagement"] = {
