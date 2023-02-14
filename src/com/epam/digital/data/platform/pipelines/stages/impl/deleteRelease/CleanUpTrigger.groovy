@@ -20,25 +20,20 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
-import groovy.json.JsonSlurperClassic
 
 @Stage(name = "cleanup-trigger", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class CleanUpTrigger {
     BuildContext context
-
+    String redashJobName = "create-dashboard-job"
     void run() {
 
         LinkedHashMap parallelDeletion = [:]
-
-        context.logger.info("Get current codebase and codebasebranch CRs")
-        getCurrentCodebaseCRs("codebase", "recreateByCleanup=true")
-        getCurrentCodebaseCRs("codebasebranch", "recreateByCleanup=true")
-        getCurrentCodebaseCRs("job", "job-name=create-dashboard-job")
+        boolean deleteRegistryRegulationsGerritRepo = context.getParameterValue("DELETE_REGISTRY_REGULATIONS_GERRIT_REPOSITORY", "false").toBoolean()
 
         context.logger.info("Calculate the timeout for cleanup job")
-        int registryRegulationsVersions = context.script.sh(script: "oc -n ${context.namespace} get codebases -o json | " +
-                "jq -r '(.items[] | select(.metadata.name | contains(\"registry-model\")) | .metadata.name )' | wc -l", returnStdout: true).trim().toInteger()
-        int cleanUpTimeout = (registryRegulationsVersions == 0) ? 10 : registryRegulationsVersions * 10
+        int registryRegulationsVersions = context.script.sh(script: "oc -n ${context.namespace} get codebases " +
+                "-l type=data-component  --no-headers | wc -l ", returnStdout: true).trim().toInteger()
+        int cleanUpTimeout = (registryRegulationsVersions == 0) ? 5 : registryRegulationsVersions * 3
         context.logger.info("Timeout is $cleanUpTimeout minutes")
 
         parallelDeletion["clearDataFromRegulationManagement"] = {
@@ -65,85 +60,66 @@ class CleanUpTrigger {
         }
 
         parallelDeletion["removeHistoryExcerptor"] = {
-            context.logger.info("Removing history-excerptor codebasebranch and codebase CRs")
+            context.logger.info("Removing ${context.codebase.historyName} codebasebranch and codebase CRs")
             try {
                 context.script.timeout(unit: 'MINUTES', time: cleanUpTimeout) {
                     context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.historyName")
                     context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.historyName)
                 }
             } catch (any) {
-                context.script.error("Cannot gracefully remove history-excerptor codebase and codebasebranch CRs")
+                context.script.error("Cannot gracefully remove ${context.codebase.historyName} codebase and codebasebranch CRs")
             }
         }
+
         parallelDeletion["cleanUpNexus"] = {
             context.logger.info("Remove artifacts from Nexus repositories")
-            trigerManualNexusTask()
+            context.cleanup.trigerManualNexusTask()
         }
         context.script.parallel(parallelDeletion)
 
-        context.logger.info("Removing registry-regulations codebasebranch and codebase CRs")
-        try {
-            context.script.timeout(unit: 'MINUTES', time: 10) {
-                context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
-                context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+        if (deleteRegistryRegulationsGerritRepo) {
+            try {
+                context.script.timeout(unit: 'MINUTES', time: 10) {
+                    context.logger.info("Removing ${context.codebase.name} codebasebranch and codebase CRs")
+                    context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
+                    context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+                }
+            } catch (any) {
+                context.script.error("Cannot gracefully remove ${context.codebase.name} codebase and codebasebranch CRs")
             }
-        } catch (any) {
-            context.script.error("Cannot gracefully remove registry-regulations codebase and codebasebranch CRs")
-        }
-        context.logger.info("Removing ${context.codebase.name} repo")
-        context.gitServer.deleteRepository(context.codebase.name)
+            context.logger.info("Removing ${context.codebase.name} repo")
+            context.gitServer.deleteRepository(context.codebase.name)
 
-        [context.codebase.name, context.codebase.historyName].each {
-            String tmpGerritSecret = "repository-codebase-${it}-temp"
-            if (!context.platform.checkObjectExists("secret", tmpGerritSecret)) {
-                String edpGerritSecret = "edp-gerrit-ciuser"
-                context.platform.create("secret generic", tmpGerritSecret,
-                        "--from-literal='username=${context.platform.getSecretValue(edpGerritSecret, "username")}' " +
-                                "--from-literal='password=${context.platform.getSecretValue(edpGerritSecret, "password")}'")
-            }
-        }
-
-        context.logger.info("Creating ${context.codebase.name} codebase, codebasebranch and redash job")
-        ["codebase", "codebasebranch", "job"].each {
-            context.platform.apply("resources-${it}.json")
-        }
-    }
-
-    void getCurrentCodebaseCRs(String resourceType, String label) {
-        String fileName = "resources-${resourceType}.json"
-        String currentCr
-        if (resourceType == 'job') {
-            currentCr = context.script.sh(script: "oc get $resourceType -l $label -o json | " +
-                    "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
-                    ".items[].metadata.creationTimestamp,.items[].metadata.generation,.items[].metadata.finalizers," +
-                    ".items[].metadata.labels.\"controller-uid\",.items[].spec.selector,.items[].spec.template.metadata.labels.\"controller-uid\"," +
-                    ".items[].status)'", returnStdout: true)
+            context.logger.info("Create ${context.codebase.name} and ${redashJobName} resources")
+            context.cleanup.createTempSecret(context.codebase.name)
+            context.cleanup.createResource(context.codebase.name)
+            context.cleanup.createResource(redashJobName)
         } else {
-            currentCr = context.script.sh(script: "oc get $resourceType -l $label -o json | " +
-                    "jq 'del(.items[].metadata.resourceVersion,.items[].metadata.uid,.items[].metadata.managedFields," +
-                    ".items[].metadata.selfLink,.items[].metadata.ownerReferences,.items[].metadata.creationTimestamp," +
-                    ".items[].metadata.generation,.items[].metadata.finalizers,.items[].status)'", returnStdout: true)
+            try {
+                context.logger.info("Execute Delete-release-${context.codebase.name} pipeline")
+                context.script.build job: "${context.codebase.name}/Delete-release-${context.codebase.name}",
+                        wait: true, propagate: true
+            } catch (any) {
+                context.script.error("Delete-release-${context.codebase.name} pipeline has been failed")
+            }
+            try {
+                context.logger.info("Recreate ${redashJobName} job")
+                context.cleanup.createResource(redashJobName)
+                context.script.retry(3) {
+                    context.platform.waitFor("job/${redashJobName}", "condition=complete", "60s")
+                }
+                context.logger.info("Execute Build-${context.codebase.name} pipeline")
+                context.script.build job: "${context.codebase.name}/MASTER-Build-${context.codebase.name}",
+                        wait: false, propagate: true, parameters: [[$class: 'BooleanParameterValue',
+                                                                    name  : 'FULL_DEPLOY', value: true]]
+            } catch (any) {
+                context.script.error("MASTER-Build-${context.codebase.name} pipeline has been failed")
+            }
         }
-        context.script.writeFile(file: fileName, text: currentCr)
 
-    }
-    void trigerManualNexusTask() {
-        String taskType = "repository.cleanup"
-        String nexusUrl = "http://nexus:8081/nexus/service/rest/v1/tasks"
-        String nexusCredentialsId = context.dockerRegistry.NEXUS_CI_USER_SECRET
-        def taskId = ""
-        def nexusGetResponse = context.script.httpRequest url: nexusUrl ,
-                httpMode: 'GET',
-                authentication: nexusCredentialsId,
-                validResponseCodes: '200,404',
-                quiet: true
-        if (nexusGetResponse.status.equals(200))
-            taskId = new JsonSlurperClassic().parseText(nexusGetResponse.content).items.findAll{ it.type.equals(taskType)}.id[0]
-        context.script.httpRequest url: nexusUrl + "/" + taskId + "/run",
-                httpMode: 'POST',
-                authentication: nexusCredentialsId,
-                customHeaders: [[name: 'Content-Type', value: "application/json"]],
-                validResponseCodes: '204',
-                quiet: true
+        context.logger.info("Creating ${context.codebase.historyName} codebase resources")
+        context.cleanup.createTempSecret(context.codebase.historyName)
+        context.cleanup.createResource(context.codebase.historyName)
+
     }
 }

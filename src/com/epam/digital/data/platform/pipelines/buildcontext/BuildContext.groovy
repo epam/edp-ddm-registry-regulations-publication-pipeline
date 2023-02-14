@@ -18,6 +18,7 @@ package com.epam.digital.data.platform.pipelines.buildcontext
 
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.platform.IPlatform
+import com.epam.digital.data.platform.pipelines.registry.CleanupRegistryRegulation
 import com.epam.digital.data.platform.pipelines.registry.Registry
 import com.epam.digital.data.platform.pipelines.registry.RegistryRegulations
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
@@ -59,6 +60,7 @@ class BuildContext {
     public GitClient gitClient
     public KeycloakClient jenkinsDeployer
     public KeycloakClient historyExcerptor
+    public CleanupRegistryRegulation cleanup
 
     private File workDir
 

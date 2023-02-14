@@ -64,4 +64,13 @@ class RegistryRegulationTests extends BasePipelineTest {
             return result
         })
     }
+
+    @Test
+    void getRegistryConfValuesTest() throws Exception {
+        helper.registerAllowedMethod('sh', [Map.class], { cmd ->
+            if (cmd.get("script").contains("deployProfile"))
+                return "development"
+        })
+        assertEquals(registryRegulations.getRegistryConfValues(true), "development")
+    }
 }

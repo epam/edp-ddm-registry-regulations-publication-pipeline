@@ -1,0 +1,87 @@
+apiVersion: v1
+data:
+  registry-regulations: |
+    apiVersion: v2.edp.epam.com/v1alpha1
+    kind: Codebase
+    metadata:
+      name: registry-regulations
+      labels:
+        recreateByCleanup: "true"
+    spec:
+      emptyProject: false
+      commitMessagePattern: null
+      jenkinsSlave: dataplatform-jenkins-agent
+      gitUrlPath: null
+      defaultBranch: master
+      branchToCopyInDefaultBranch: ''
+      buildTool: none
+      route: null
+      perf: null
+      versioning:
+        startFrom: 0.0.1
+        type: edp
+      jobProvisioning: registry
+      repository:
+        url: 'https://mock'
+      lang: groovy-pipeline
+      deploymentScript: ''
+      strategy: clone
+      jiraIssueMetadataPayload: null
+      gitServer: gerrit
+      testReportFramework: null
+      ticketNamePattern: null
+      type: library
+      database: null
+      description: null
+      framework: null
+      ciTool: Jenkins
+    ---
+    apiVersion: v2.edp.epam.com/v1alpha1
+    kind: CodebaseBranch
+    metadata:
+      name: registry-regulations-master
+      labels:
+        affiliatedWith: "registry-regulations"
+        recreateByCleanup: "true"
+    spec:
+      branchName: master
+      codebaseName: registry-regulations
+      fromCommit: ''
+      release: false
+      version: 0.0.1
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: registry-configuration
+    meta.helm.sh/release-namespace: mock
+  creationTimestamp: "2023-02-13T18:14:00Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data: {}
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:meta.helm.sh/release-name: {}
+          f:meta.helm.sh/release-namespace: {}
+        f:labels:
+          .: {}
+          f:app.kubernetes.io/managed-by: {}
+    manager: helm
+    operation: Update
+    time: "2023-02-15T09:48:02Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data:
+        f:registry-regulations: {}
+    manager: Mozilla
+    operation: Update
+    time: "2023-02-15T11:31:58Z"
+  name: registry-regulations
+  namespace: mock
+  resourceVersion: "4389777861"
+  uid: f9c49dc2-dd1d-4468-a6ac-c114f0b5479f

@@ -20,6 +20,7 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.BusinessProcMgmtSys
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
+import com.epam.digital.data.platform.pipelines.tools.Helm
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
 
 @Stage(name = "delete-registry", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
@@ -48,28 +49,25 @@ class DeleteRegistry {
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterRepPod}:/tmp/")
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterPod}:/tmp/")
 
+            context.logger.info("Get the subscription connection settings")
+            String subconninfo = context.postgres.psqlCommand(context.postgres.masterRepPod,
+                    "select subconninfo from pg_subscription where subname = 'operational_sub';",
+                    context.registry.name, context.postgres.analytical_pg_user).trim()
+
+            context.logger.info("Deleting the analytical subscription")
+            context.postgres.psqlCommand(context.postgres.masterRepPod,"DROP SUBSCRIPTION operational_sub;",
+                    context.registry.name, context.postgres.analytical_pg_user)
+
             context.logger.info("Cleaning registry DB on analytical cluster")
-            String srsubState = context.postgres.psqlCommand(context.postgres.masterRepPod,
-                    "select count(*)from pg_subscription_rel where srsubstate <> 'r';",
-                    context.registry.name, context.postgres.analytical_pg_user).trim()
-            if (srsubState != '0') {
-                context.postgres.psqlCommand(context.postgres.masterRepPod,
-                        "alter subscription operational_sub refresh publication;",
-                        context.registry.name, context.postgres.analytical_pg_user)
-                context.postgres.psqlCommand(context.postgres.masterRepPod,
-                        "alter subscription operational_sub enable",
-                        context.registry.name, context.postgres.analytical_pg_user)
-            }
-            String isSubenabled = context.postgres.psqlCommand(context.postgres.masterRepPod,
-                    "select subenabled from pg_subscription;",
-                    context.registry.name, context.postgres.analytical_pg_user).trim()
-            if (isSubenabled == 't') {
-                context.postgres.psqlScript(context.postgres.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.analytical_pg_user, "-d ${context.registry.name}")
-            } else {
-                context.logger.error("Subscription operational_sub is disabled on analytical master!")
-            }
+            context.postgres.psqlScript(context.postgres.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.analytical_pg_user, "-d ${context.registry.name}")
+
             context.logger.info("Cleaning registry DB on operational cluster")
             context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.operational_pg_user, "-d ${context.registry.name}")
+
+            context.logger.info("Recreating a subscription on an analytical instance")
+            context.postgres.psqlCommand(context.postgres.masterRepPod,
+                    "CREATE SUBSCRIPTION operational_sub CONNECTION '${subconninfo}' PUBLICATION analytical_pub WITH(create_slot=false,slot_name=operational_sub);",
+                    context.registry.name, context.postgres.analytical_pg_user)
 
             context.logger.info("Cleaning process_history DB on operational cluster")
             context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_PROCESS_HISTORY_SQL}", context.postgres.operational_pg_user)
@@ -114,9 +112,9 @@ class DeleteRegistry {
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/groups", context.redash.viewerApiKey)
             context.logger.info("Remove audit dashboards job")
             try {
-                context.script.sh(script: "oc delete job create-dashboard-job -n $context.namespace")
+                context.script.sh(script: "oc delete job create-dashboard-job -n $context.namespace ")
             } catch (any) {
-                context.logger.info("Audit dashboards job removed already")
+                context.logger.info("WARN: create-dashboard-job was not removed")
             }
         }
         parallelDeletion["removeKafkaTopics"] = {
@@ -124,7 +122,7 @@ class DeleteRegistry {
             String kafkaBootstrapServer = "kafka-cluster-kafka-bootstrap:9092"
             def kafkaTopicList
             int attempt = 0
-            int maxAttempts = 10
+            int maxAttempts = 12
             Boolean kafkaTopicsRemoved = false
             while (!kafkaTopicsRemoved) {
                 attempt++
@@ -146,10 +144,21 @@ class DeleteRegistry {
                                 "--bootstrap-server $kafkaBootstrapServer --delete --topic ${kafkaTopics.substring(0, kafkaTopics.length() - 1)}")
                     } catch (any) {
                         kafkaTopicsRemoved = false
-                        context.logger.info("Removing of kafka topics failed. Retrying (attempt $attempt/10)")
+                        context.logger.info("Removing of kafka topics failed. Retrying (attempt $attempt/12)")
                     }
                 } else {
                     kafkaTopicsRemoved = true
+                }
+                if (attempt > 5) {
+                    ["registry-rest-api", "registry-kafka-api", "registry-soap-api"].each {
+                        Helm.uninstall(context, it,
+                                context.namespace, true)
+                    }
+                    try {
+                        context.script.sh(script: "oc get bc,gerritproject -oname | grep -i \"api\\|model\" | xargs oc delete")
+                    } catch (any) {
+                        context.logger.info("Failed to remove data services resources")
+                    }
                 }
             }
             context.logger.info("Kafka topics were successfully removed.")
