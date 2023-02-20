@@ -34,6 +34,10 @@ delete
 from ddm_db_changelog
 where author <> 'platform';
 
+-- clean possible locks from previous registry deployments
+delete from ddm_db_changelog_lock
+  where locked = true and lockedby like 'dataplatform-jenkins-agent%';
+
 -- create schema registry
 create schema if not exists registry;
 alter schema registry owner to ${OWNER_ROLE};
