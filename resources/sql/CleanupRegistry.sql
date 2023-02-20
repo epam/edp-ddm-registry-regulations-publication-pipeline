@@ -1,6 +1,3 @@
-drop database if exists camunda with (force);
-
-
 -- drop schema registry (if exists)
 -- NB. This command also deletes tables from publication and subscription lists and table's distribution from citus
 drop schema if exists registry cascade;

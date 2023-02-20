@@ -29,6 +29,7 @@ class DeleteRegistry {
     private String CLEANUP_REGISTRY_SQL = "CleanupRegistry.sql"
     private String CLEANUP_PROCESS_HISTORY_SQL = "CleanupProcessHistory.sql"
     private String CLEANUP_REDASH_USERS_SQL = "CleanupRedashUsers.sql"
+    private String CLEANUP_CAMUNDA_SQL = "CleanupCamunda.sql"
     private String REDASH_POD_NAME = "redash-viewer-postgresql-0"
     private String REDASH_VIEWER_SECRET = "redash-viewer-secret"
 
@@ -46,6 +47,8 @@ class DeleteRegistry {
             context.script.writeFile(file: "sql/${CLEANUP_REGISTRY_SQL}", text: TemplateRenderer.renderTemplate(template, binding))
             String cleanupProcessHistorySqlResource = context.script.libraryResource("sql/${CLEANUP_PROCESS_HISTORY_SQL}")
             context.script.writeFile(file: "sql/${CLEANUP_PROCESS_HISTORY_SQL}", text: cleanupProcessHistorySqlResource)
+            String cleanupCamundaSqlResource = context.script.libraryResource("sql/${CLEANUP_CAMUNDA_SQL}")
+            context.script.writeFile(file: "sql/${CLEANUP_CAMUNDA_SQL}", text: cleanupCamundaSqlResource)
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterRepPod}:/tmp/")
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterPod}:/tmp/")
 
@@ -71,6 +74,9 @@ class DeleteRegistry {
 
             context.logger.info("Cleaning process_history DB on operational cluster")
             context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_PROCESS_HISTORY_SQL}", context.postgres.operational_pg_user)
+
+            context.logger.info("Cleaning camunda DB on operational cluster")
+            context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_CAMUNDA_SQL}", context.postgres.operational_pg_user)
 
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
