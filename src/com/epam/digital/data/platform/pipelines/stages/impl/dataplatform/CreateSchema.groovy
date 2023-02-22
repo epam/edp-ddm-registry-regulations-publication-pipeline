@@ -25,7 +25,7 @@ class CreateSchema {
     BuildContext context
 
     private final String LIQUIBASE_JAR = "/home/jenkins/liquibase/liquibase.jar"
-    private final String LIQUIBASE_CLASSPATH = "/home/jenkins/liquibase/lib/postgresql-42.2.16.jar:" +
+    private final String LIQUIBASE_CLASSPATH = "/home/jenkins/liquibase/lib/postgresql-42.3.3.jar:" +
             "/home/jenkins/liquibase/lib/liquibase-ddm-ext.jar"
     private final String LIQUIBASE_PRE_DEPLOY_SCRIPT = "../../liquibase-repositories/changelog-master-pre-deploy.xml"
     private final String LIQUIBASE_MAIN_SCRIPT = "data-model/main-liquibase.xml"
