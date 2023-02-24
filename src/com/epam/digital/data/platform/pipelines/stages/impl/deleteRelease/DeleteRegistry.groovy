@@ -33,6 +33,7 @@ class DeleteRegistry {
 
     void run() {
         LinkedHashMap parallelDeletion = [:]
+        ArrayList systemRoles = []
 
         parallelDeletion["cleanPostgresDB"] = {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
@@ -56,7 +57,7 @@ class DeleteRegistry {
                         "alter subscription operational_sub refresh publication;",
                         context.registry.name, context.postgres.analytical_pg_user)
                 context.postgres.psqlCommand(context.postgres.masterRepPod,
-                                "alter subscription operational_sub enable",
+                        "alter subscription operational_sub enable",
                         context.registry.name, context.postgres.analytical_pg_user)
             }
             String isSubenabled = context.postgres.psqlCommand(context.postgres.masterRepPod,
@@ -77,17 +78,23 @@ class DeleteRegistry {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
 
             context.logger.info("Removing analytics roles from registry db on analytical cluster")
-            LinkedHashMap officerUsersYaml = context.script.readYaml file: "roles/officer.yml"
-            officerUsersYaml["roles"].each { String role ->
-                if (role != null) {
+            LinkedHashMap registryPostgresValues = context.script.readYaml text: context.script.sh(script: """helm get values registry-postgres -a -n ${context.namespace}""", returnStdout: true)
+            registryPostgresValues["postgresCluster"]["secrets"]["citusRolesSecrets"].each { role ->
+                if (role.value.contains("analytics_"))
+                    systemRoles += role.value
+            }
+            List rolesToDelete = context.postgres.psqlCommand(context.postgres.masterRepPod,
+                    "SELECT rolname FROM pg_roles WHERE rolname LIKE 'analytics_%' AND rolname not in ('${systemRoles.join("','")}');", context.registry.name, context.postgres.analytical_pg_user).replaceAll(" ","").tokenize('\n')
+            if (rolesToDelete) {
+                rolesToDelete.each { roleName ->
                     try {
                         context.postgres.psqlCommand(context.postgres.masterRepPod,
-                                "call p_delete_analytics_user('analytics_${role["name"]}')", context.registry.name, context.postgres.analytical_pg_user)
+                                "call p_delete_analytics_user('${roleName}')", context.registry.name, context.postgres.analytical_pg_user)
                     } catch (any) {
                         if (context.postgres.psqlCommand(context.postgres.masterRepPod,
-                                "SELECT 1 FROM pg_roles WHERE rolname='analytics_${role["name"]}';",
+                                "SELECT 1 FROM pg_roles WHERE rolname='${roleName}';",
                                 context.registry.name, context.postgres.analytical_pg_user).trim() == '1') {
-                            context.script.error("Removing of analytic role $role from database $context.registry.name FAILED")
+                            context.script.error("Removing of analytic role ${roleName} from database $context.registry.name FAILED")
                         }
                     }
                 }
