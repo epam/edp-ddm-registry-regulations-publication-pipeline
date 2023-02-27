@@ -26,7 +26,7 @@ class Redash {
     private final String VIEWER_KEY_JSON_PATH = "viewer-api-key"
     private final String ADMIN_KEY_JSON_PATH = "admin-api-key"
     private final String REDASH_API_KEY_SECRET = "redash-api-keys"
-    private final String REDASH_SETUP_SECRET = "redash-setup-secret"
+    private final String REDASH_SETUP_SECRET = "redash-system-admin-creds"
 
     public String viewerUrl
     public String adminUrl
@@ -64,7 +64,7 @@ class Redash {
                 customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
-                validResponseCodes: "200,404"
+                validResponseCodes: "200,403,404"
         context.logger.debug("Redash ${redashElement} response: ${response.content}")
 
         if (response.getStatus() == 404) {
@@ -81,14 +81,24 @@ class Redash {
         }
         if (isKeysRegenerated)
             restartRedashExporterPod()
+        if (response.getStatus() == 403) {
+            String systemAdminEmail = context.platform.getSecretValue(REDASH_SETUP_SECRET, "email")
+            context.script.error("Please ensure that redash system admin is added to admin group in redash.\n" +
+                    "Possible solution:\n" +
+                    "1. Check if there is no user with email $systemAdminEmail in Keycloak;\n" +
+                    "2. Run the following commands in redash deployment pod(s):\n" +
+                    "export DATABASE_URL=postgresql://\$REDASH_DATABASE_USER:\$REDASH_DATABASE_PASSWORD@\$REDASH_DATABASE_HOSTNAME/\$REDASH_DATABASE_DB;\n" +
+                    "python ./manage.py users grant_admin $systemAdminEmail")
+        }
     }
 
     private String regenerateApiKey(String url, String password) {
         context.logger.info("Get redash login cookie")
+        String systemAdminEmail = context.platform.getSecretValue(REDASH_SETUP_SECRET, "email")
         def loginResponse = context.script.httpRequest url: "${url}/login",
                 httpMode: "POST",
                 contentType: "APPLICATION_FORM",
-                requestBody: "email=user@mail.com&password=${password}",
+                requestBody: "email=${systemAdminEmail}&password=${password}",
                 consoleLogResponseBody: context.logLevel == "DEBUG",
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "302"
