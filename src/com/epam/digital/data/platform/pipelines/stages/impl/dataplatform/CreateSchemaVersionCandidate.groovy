@@ -50,35 +50,40 @@ class CreateSchemaVersionCandidate {
         boolean isDataModelChanged = isDataModelChanged(operationalMasterRegistryDBUrl, symlinkPath)
 
         if (isDataModelChanged) {
-            // always drop temporary version candidate database if exists
-            context.script.sh(script: "git checkout master")
-            context.logger.info("Remove old temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
-            context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" dropdb --force --if-exists registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} -h localhost'", "database")
-
-            // create temporary version candidate database
-            context.logger.info("Create new temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
-            context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" psql -d registry_template -h localhost -c \"select pid, pg_terminate_backend(pid) from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid();\"'", "database")
-            context.platform.podExec(context.postgres.masterPod, "bash -c 'createdb -O ${context.postgres.regTemplateOwnerRole} -T registry_template registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}'", "database")
-
-            // set searh_path to temp database
-            context.platform.podExec(context.postgres.masterPod, "bash -c \"psql -c \'alter database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} set search_path to \\\"\\\$user\\\", registry, public;\'\"", "database")
-
-            // grant connect to registry_regulation_management_role
-            context.platform.podExec(context.postgres.masterPod, "bash -c 'psql -c \"grant connect on database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} to ${context.postgres.regRegulationRole};\"'", "database")
-
-            // remove data-load from previous using and copy data-load files from master branch
-            context.logger.info("Remove data-load from previous using")
             try {
-                removeDataLoadFiles(dataLoadPath, symlinkPath)
-                context.logger.info("Copying data-load from master branch")
-                copyDataLoadFiles(dataLoadPath, symlinkPath)
+                // always drop temporary version candidate database if exists
+                context.script.sh(script: "git checkout master")
+                context.logger.info("Remove old temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
+                context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" dropdb --force --if-exists registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} -h localhost'", "database")
+
+                // create temporary version candidate database
+                context.logger.info("Create new temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
+                context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" psql -d registry_template -h localhost -c \"select pid, pg_terminate_backend(pid) from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid();\"'", "database")
+                context.platform.podExec(context.postgres.masterPod, "bash -c 'createdb -O ${context.postgres.regTemplateOwnerRole} -T registry_template registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}'", "database")
+
+                // set searh_path to temp database
+                context.platform.podExec(context.postgres.masterPod, "bash -c \"psql -c \'alter database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} set search_path to \\\"\\\$user\\\", registry, public;\'\"", "database")
+
+                // grant connect to registry_regulation_management_role
+                context.platform.podExec(context.postgres.masterPod, "bash -c 'psql -c \"grant connect on database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} to ${context.postgres.regRegulationRole};\"'", "database")
+
+                // remove data-load from previous using and copy data-load files from master branch
+                context.logger.info("Remove data-load from previous using")
+                try {
+                    removeDataLoadFiles(dataLoadPath, symlinkPath)
+                    context.logger.info("Copying data-load from master branch")
+                    copyDataLoadFiles(dataLoadPath, symlinkPath)
+                }
+                catch (any) {
+                    context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
+                }
+
+                context.logger.info("Applying Liquibase from master")
+                runUpdateLiquibase(operationalMasterRegistryDBUrl ,registryVersionFromMaster, dataLoadPath, symlinkPath)
             }
             catch (any) {
-                context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
+                context.logger.warn("Something went wrong when applying Liquibase from master")
             }
-
-            context.logger.info("Applying Liquibase from master")
-            runUpdateLiquibase(operationalMasterRegistryDBUrl ,registryVersionFromMaster, dataLoadPath, symlinkPath)
 
             if (doesVersionCandidateHasChangesInDataLoad) {
                 context.logger.info("Cloning ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
