@@ -48,8 +48,6 @@ class CreateExcerptorJob {
                         "registry", context.postgres.analytical_pg_user).trim(),
                 'id'                     : context.getParameterValue("ID"),
                 'token'                  : context.keycloak.getAccessToken(context.historyExcerptor),
-                'data.requestBucketName' : context.platform.getJsonPathValue(Ceph.OBJECT_BUCKET_CLAIM_API,
-                        "lowcode-form-data-storage", ".spec.bucketName"),
                 'data.historicBucketName': context.platform.getJsonPathValue(Ceph.OBJECT_BUCKET_CLAIM_API,
                         "datafactory-ceph-bucket", ".spec.bucketName"),
                 'edpProject'             : context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
