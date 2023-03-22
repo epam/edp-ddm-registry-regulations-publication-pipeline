@@ -27,10 +27,10 @@ class CloneProjects {
     void run() {
         context.dataComponents.values().each { dataComponent ->
             context.script.dir(dataComponent.getWorkDir()) {
-                context.logger.info("Checkout ${dataComponent.name}")
+                context.logger.info("Checkout ${dataComponent.fullName}")
                 context.gitClient.checkout(dataComponent.repositoryPath, dataComponent.codebaseBranch,
                         context.gitServer.credentialsId)
-                context.script.sh(script: "git checkout -b ${dataComponent.codebaseBranch}")
+                context.script.sh(script: "git checkout ${dataComponent.codebaseBranch}")
             }
         }
     }

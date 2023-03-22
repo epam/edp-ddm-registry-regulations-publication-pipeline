@@ -41,21 +41,21 @@ class DataComponent {
     private final String codebaseYaml
     private final String codebaseBranchYaml
 
-    DataComponent(BuildContext context, String name, String registryName, String registryVersion,
+    DataComponent(BuildContext context, String name, String codebaseVersion,
                   String codebaseBranch, String repositoryPath,
                   String jobProvisioner, String jenkinsAgent) {
         this.context = context
         this.name = name
-        this.fullName = "${registryName}-${name}"
-        this.version = registryVersion
-        this.codebaseName = "${registryName}-${name}-${registryVersion}"
+        this.fullName = "registry-${name}"
+        this.version = codebaseVersion
+        this.codebaseName = "${fullName}"
         this.codebaseBranch = codebaseBranch
         this.repositoryPath = repositoryPath
         this.jobProvisioner = jobProvisioner
         this.jenkinsAgent = jenkinsAgent
         this.pipelineName = "${codebaseName}/${codebaseBranch.toUpperCase()}-Build-${codebaseName}"
-        this.codebaseYaml = "${name}.yaml"
-        this.codebaseBranchYaml = "${name}.yaml"
+        this.codebaseYaml = "${fullName}.yaml"
+        this.codebaseBranchYaml = "${fullName}.yaml"
     }
 
     void setWorkDir(String workDir) {

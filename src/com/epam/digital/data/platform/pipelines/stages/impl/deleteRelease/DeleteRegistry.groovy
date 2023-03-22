@@ -20,7 +20,6 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.BusinessProcMgmtSys
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
-import com.epam.digital.data.platform.pipelines.tools.Helm
 import com.epam.digital.data.platform.pipelines.tools.TemplateRenderer
 
 @Stage(name = "delete-registry", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
@@ -116,52 +115,6 @@ class DeleteRegistry {
             } catch (any) {
                 context.logger.info("WARN: create-dashboard-job was not removed")
             }
-        }
-        parallelDeletion["removeKafkaTopics"] = {
-            String kafkaBrokerPod = "kafka-cluster-kafka-0"
-            String kafkaBootstrapServer = "kafka-cluster-kafka-bootstrap:9092"
-            def kafkaTopicList
-            int attempt = 0
-            int maxAttempts = 12
-            Boolean kafkaTopicsRemoved = false
-            while (!kafkaTopicsRemoved) {
-                attempt++
-                if (attempt > maxAttempts) {
-                    context.script.error("Attempts limit is reached and kafka topics were not removed yet!")
-                    kafkaTopicsRemoved = true
-                }
-                String kafkaTopics = ''
-                kafkaTopicList = context.script.sh(script: "oc exec $kafkaBrokerPod -c kafka -- bin/kafka-topics.sh " +
-                        "--list --bootstrap-server $kafkaBootstrapServer", returnStdout: true).tokenize()
-                kafkaTopicList.each { kafkaTopic ->
-                    if (kafkaTopic.matches(".*\\d.*") && (kafkaTopic.contains("inbound") || kafkaTopic.contains("outbound"))) {
-                        kafkaTopics = kafkaTopics + "$kafkaTopic,"
-                    }
-                }
-                if (kafkaTopics.length() > 1) {
-                    try {
-                        context.script.sh(script: "oc exec $kafkaBrokerPod -c kafka -- bin/kafka-topics.sh " +
-                                "--bootstrap-server $kafkaBootstrapServer --delete --topic ${kafkaTopics.substring(0, kafkaTopics.length() - 1)}")
-                    } catch (any) {
-                        kafkaTopicsRemoved = false
-                        context.logger.info("Removing of kafka topics failed. Retrying (attempt $attempt/12)")
-                    }
-                } else {
-                    kafkaTopicsRemoved = true
-                }
-                if (attempt > 5) {
-                    ["registry-rest-api", "registry-kafka-api", "registry-soap-api"].each {
-                        Helm.uninstall(context, it,
-                                context.namespace, true)
-                    }
-                    try {
-                        context.script.sh(script: "oc get bc,gerritproject -oname | grep -i \"api\\|model\" | xargs oc delete")
-                    } catch (any) {
-                        context.logger.info("Failed to remove data services resources")
-                    }
-                }
-            }
-            context.logger.info("Kafka topics were successfully removed.")
         }
         context.script.parallel(parallelDeletion)
     }

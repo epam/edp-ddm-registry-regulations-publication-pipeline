@@ -48,6 +48,7 @@ class CodebaseTests extends BasePipelineTest {
                 return "{\"metadata\": {\"name\": \"registry-regulations\"}, \"spec\": " +
                         "{\"buildTool\": \"none\", \"ciTool\": \"Jenkins\", \"commitMessagePattern\": null, " +
                         "\"defaultBranch\": \"master\", \"deploymentScript\": \"\", \"description\": null, " +
+                        "\"versioning\": {\"startFrom\": \"0.0.1\"}, " +
                         "\"emptyProject\": false, \"framework\": null, \"gitServer\": \"gerrit\", \"gitUrlPath\": null, " +
                         "\"jenkinsSlave\": \"dataplatform-jenkins-agent\", \"jiraIssueMetadataPayload\": null, " +
                         "\"jobProvisioning\": \"registry\", \"lang\": \"groovy-pipeline\", \"perf\": null, " +

@@ -30,12 +30,12 @@ class CommitProjects {
         context.dataComponents.values().each { dataComponent ->
             context.script.dir(dataComponent.getWorkDir()) {
                 context.script.sshagent(["${context.gitServer.credentialsId}"]) {
-                    context.logger.info("Commiting and pushing changes to ${dataComponent.name}")
+                    context.logger.info("Commiting and pushing changes to ${dataComponent.fullName}")
                     context.gitClient.gitSetConfig()
                     context.gitClient.gitAdd()
                     context.gitClient.gitCommit(COMMIT_MESSAGE)
                     context.script.retry(5) {
-                        context.gitClient.gitPush(context.codebase.branch)
+                        context.gitClient.gitPush(dataComponent.codebaseBranch)
                     }
                 }
             }

@@ -36,10 +36,9 @@ class InitRegistry {
         context.registryRegulations = new RegistryRegulations(context)
         context.dataComponents = [:]
         DataComponentType.values().each {
-            DataComponent dataComponent = new DataComponent(context, it.getValue(), context.registry.name,
-                    context.registry.version, context.codebase.branch, "ssh://${context.gitServer.autouser}" +
-                    "@${context.gitServer.host}:${context.gitServer.sshPort}/${context.registry.name}-" +
-                    "${it.getValue()}-${context.registry.version}",
+            DataComponent dataComponent = new DataComponent(context, it.getValue(), context.codebase.version,
+                    context.codebase.branch, "ssh://${context.gitServer.autouser}" +
+                    "@${context.gitServer.host}:${context.gitServer.sshPort}/${context.registry.name}-${it.getValue()}",
                     context.codebase.jobProvisioner, context.codebase.jenkinsAgent)
             context.dataComponents.put(it.getValue(), dataComponent)
             context.logger.debug("Initialized data component: ${dataComponent.toString()}")

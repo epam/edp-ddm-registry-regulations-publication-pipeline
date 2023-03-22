@@ -17,6 +17,7 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.dataplatform
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.registrycomponents.generated.DataComponent
 import com.epam.digital.data.platform.pipelines.registrycomponents.generated.DataComponentType
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
@@ -53,12 +54,21 @@ class GenerateProjects {
             context.script.dir(dataComponent.getWorkDir()) {
                 context.script.sh(script: "rm -rf ${dataComponent.DEPLOY_TEMPLATES_PATH}; " +
                         "cp -r ${context.getGeneratedProjectsDir()}/${dataComponent.name}/* .")
+
+                def pom = context.script.readMavenPom(file: "pom.xml")
+                String version = dataComponent.version
+                pom.version = version
+                context.script.writeMavenPom(model: pom)
                 if (dataComponent.name != DataComponentType.MODEL.getValue()) {
                     String chartYamlPath = "${dataComponent.DEPLOY_TEMPLATES_PATH}/Chart.yaml"
                     LinkedHashMap chartYaml = context.script.readYaml file: chartYamlPath
-                    chartYaml.appVersion = context.registry.version
-                    chartYaml.version = context.registry.version
+                    chartYaml.appVersion = dataComponent.version
+                    chartYaml.version = dataComponent.version
                     context.script.writeYaml file: chartYamlPath, data: chartYaml, overwrite: true
+                    DataComponent dataModel = context.dataComponents.get(DataComponentType.MODEL.getValue())
+                    def pomXml = context.script.readMavenPom(file: "pom.xml")
+                    pomXml.dependencies[1].version = dataModel.version
+                    context.script.writeMavenPom(model: pomXml)
                 }
             }
         }

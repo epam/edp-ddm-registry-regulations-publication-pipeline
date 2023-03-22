@@ -23,6 +23,7 @@ import com.epam.digital.data.platform.pipelines.registrycomponents.external.Keyc
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.PostgresOperator
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Redash
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Kafka
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
 import com.epam.digital.data.platform.pipelines.tools.GitClient
 import com.epam.digital.data.platform.pipelines.tools.Logger
@@ -77,6 +78,10 @@ void call() {
             context.logger.info("Initializing redash")
             context.redash = new Redash(context)
             context.redash.init()
+
+            context.logger.info("Initializing kafka")
+            context.kafka = new Kafka(context)
+            context.kafka.init()
 
             context.logger.info("Initializing keycloak")
             context.keycloak = new Keycloak(context)

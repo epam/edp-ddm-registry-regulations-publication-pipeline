@@ -51,4 +51,16 @@ class GitClient {
     void gitPush(String branch = "--all") {
         context.script.sh(script: "git push origin ${branch}")
     }
+
+    void gitPushForce(String branch = "--all") {
+        context.script.sh(script: "git push --force origin ${branch}")
+    }
+
+    void gitResetHardToPreviousCommit() {
+        context.script.sh(script: "git reset --hard HEAD~1")
+    }
+
+    String getCurrentCommitMessage() {
+        return context.script.sh(script: "git log -1 --format=%s", returnStdout: true)
+    }
 }

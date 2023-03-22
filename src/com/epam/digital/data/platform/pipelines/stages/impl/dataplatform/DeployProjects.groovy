@@ -46,9 +46,9 @@ class DeployProjects {
                             'image.name'         : context.platform.getJsonPathValue("buildconfig",
                                     ("${dataComponent.codebaseName}-${dataComponent.codebaseBranch}").replace('.', '-'),
                                     ".spec.output.to.name").toString().split(':')[0],
-                            'image.version'      : context.registry.version,
+                            'image.version'      : dataComponent.version,
                             'dockerProxyRegistry': context.dockerRegistry.proxyHost,
-                            'version'            : context.registry.version,
+                            'version'            : dataComponent.version,
                             'keycloak.url'       : context.keycloak.url,
                             'deployProfile'      : context.registryRegulations.getRegistryConfValues(true),
                             'nexusPullSecret'    : context.dockerRegistry.PUSH_SECRET

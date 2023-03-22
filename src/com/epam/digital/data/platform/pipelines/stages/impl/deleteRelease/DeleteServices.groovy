@@ -27,11 +27,7 @@ class DeleteServices {
 
     void run() {
         context.logger.info("Removing ${context.codebase.name} helm release")
-        def splitCodebaseName = context.codebase.name.split('-')
-        if (splitCodebaseName.size() > 2) {
-            Helm.uninstall(context, "${splitCodebaseName[0]}-${splitCodebaseName[1]}-${splitCodebaseName[2]}",
-                    context.namespace, true)
-        }
+        Helm.uninstall(context, context.codebase.name, context.namespace, true)
         context.logger.info("Removing ${context.codebase.name} repo")
         context.gitServer.deleteRepository(context.codebase.name)
 

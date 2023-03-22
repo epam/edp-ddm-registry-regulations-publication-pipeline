@@ -19,6 +19,7 @@ import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.platform.PlatformFactory
 import com.epam.digital.data.platform.pipelines.registrycomponents.external.DockerRegistry
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Gerrit
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Kafka
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.PostgresOperator
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
 import com.epam.digital.data.platform.pipelines.tools.GitClient
@@ -90,6 +91,10 @@ void call() {
             context.codebase = new Codebase(context)
             context.codebase.init()
             context.logger.debug("Codebase config: ${context.codebase.toString()}")
+
+            context.logger.info("Initializing kafka")
+            context.kafka = new Kafka(context)
+            context.kafka.init()
 
         }
     }

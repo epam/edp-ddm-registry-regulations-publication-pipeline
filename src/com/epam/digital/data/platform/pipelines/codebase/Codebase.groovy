@@ -45,6 +45,7 @@ class Codebase {
     public IBuildTool buildTool
     public String sourceRepository
     public String sourceHistoryRepository
+    public String version
 
     LinkedHashMap codebaseJson
     LinkedHashMap codebaseHistoryJson
@@ -92,6 +93,7 @@ class Codebase {
         this.jenkinsAgent = this.codebaseJson["jenkinsSlave"]
         this.buildToolSpec = this.codebaseJson["buildTool"]
         this.buildTool = BuildToolFactory.getBuildToolImpl(buildToolSpec, context)
+        this.version = this.codebaseJson["versioning"]["startFrom"]
     }
 
     void initBuildTool() {
@@ -112,6 +114,7 @@ class Codebase {
                 ", jobProvisioner='" + jobProvisioner + '\'' +
                 ", type='" + type + '\'' +
                 ", jenkinsAgent='" + jenkinsAgent + '\'' +
+                ", version='" + version + '\'' +
                 '}'
     }
 }

@@ -32,7 +32,7 @@ class CleanUpTrigger {
 
         context.logger.info("Calculate the timeout for cleanup job")
         int registryRegulationsVersions = context.script.sh(script: "oc -n ${context.namespace} get codebases " +
-                "-l type=data-component  --no-headers | wc -l ", returnStdout: true).trim().toInteger()
+                "--no-headers | wc -l ", returnStdout: true).trim().toInteger()
         int cleanUpTimeout = (registryRegulationsVersions == 0) ? 5 : registryRegulationsVersions * 3
         context.logger.info("Timeout is $cleanUpTimeout minutes")
 
@@ -47,6 +47,7 @@ class CleanUpTrigger {
             }
         }
 
+        // Remove multiple-version of data-services
         parallelDeletion["removeDataServices"] = {
             context.logger.info("Removing Data Services codebasebranches")
             try {

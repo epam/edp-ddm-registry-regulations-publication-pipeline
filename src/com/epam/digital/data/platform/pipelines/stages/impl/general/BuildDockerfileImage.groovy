@@ -33,11 +33,8 @@ class BuildDockerfileImage {
         String version = context.script.readMavenPom(file: "pom.xml").version
         context.codebase.setImageTag(version)
         context.logger.debug("Version from pom.xml: ${version}")
-
-        String repoChecksum = context.script.sh(script: "find . -type f -not -path '*/\\.git/*' -exec md5sum {} \\; " +
-                "| sort | md5sum", returnStdout: true).replaceAll('-', '').trim()
-        String agentVersion = context.script.env.AGENT_IMAGE_VERSION
-        context.codebase.setImageName("$context.codebase.imageName-$repoChecksum-${agentVersion.toLowerCase()}")
+        String imageVersion = context.codebase.version.replaceAll("\\.", "-")
+        context.codebase.setImageName("$context.codebase.imageName-$imageVersion")
 
         def response = context.script.httpRequest url: "http://nexus:8081/nexus/repository/docker-registry/v2/$context.namespace/$context.codebase.imageName/manifests/$context.codebase.imageTag",
                 authentication: 'nexus-ci.user',
@@ -46,7 +43,7 @@ class BuildDockerfileImage {
                 quiet: context.logLevel != "DEBUG",
                 validResponseCodes: "200,404"
 
-        if (response.getStatus() == 404) {
+        if ((response.getStatus() == 404) || (response.getStatus() == 200)) {
             if (context.script.fileExists("${context.workDir}/Dockerfile")) {
                 String globalNexusNamespace = context.dnsWildcard.startsWith("apps.cicd") ?
                         'mdtu-ddm-edp-cicd' : 'control-plane'

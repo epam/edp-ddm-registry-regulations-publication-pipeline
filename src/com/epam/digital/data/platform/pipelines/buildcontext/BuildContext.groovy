@@ -28,6 +28,7 @@ import com.epam.digital.data.platform.pipelines.registrycomponents.generated.Dat
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.PostgresOperator
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.GitServer
 import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Redash
+import com.epam.digital.data.platform.pipelines.registrycomponents.regular.Kafka
 import com.epam.digital.data.platform.pipelines.stages.StageFactory
 import com.epam.digital.data.platform.pipelines.tools.GitClient
 import com.epam.digital.data.platform.pipelines.tools.Logger
@@ -55,6 +56,7 @@ class BuildContext {
     public Keycloak keycloak
     public PostgresOperator postgres
     public Redash redash
+    public Kafka kafka
     public DockerRegistry dockerRegistry
     public GitServer gitServer
     public GitClient gitClient
