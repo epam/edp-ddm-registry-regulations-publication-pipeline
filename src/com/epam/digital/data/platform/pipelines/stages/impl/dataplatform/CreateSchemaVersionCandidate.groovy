@@ -125,6 +125,7 @@ class CreateSchemaVersionCandidate {
                 "--contexts=${params.get("contexts")} " +
                 "--databaseChangeLogTableName=ddm_db_changelog " +
                 "--databaseChangeLogLockTableName=ddm_db_changelog_lock " +
+                "--logLevel=INFO " +
                 "${method} " +
                 "-Dconn.host=${params.get("connHost", "")} " +
                 "-Dconn.dbname=${params.get("connDbname", "")} " +
@@ -152,7 +153,7 @@ class CreateSchemaVersionCandidate {
         context.logger.info("Run main-deploy script on operational-instance")
         runLiquibase(changeLogFile: LIQUIBASE_MAIN_SCRIPT,
                 url: operationalMasterRegistryDBUrl,
-                contexts: "all,pub",
+                contexts: "all,pub,code-review",
                 dataLoadPath: symlinkPath + "/",
                 username: context.postgres.regTemplateOwnerRole,
                 password: context.postgres.regTemplateOwnerRolePass,
@@ -178,7 +179,7 @@ class CreateSchemaVersionCandidate {
         try {
             liquibaseStatus = runLiquibase(changeLogFile: LIQUIBASE_MAIN_SCRIPT,
                     url: operationalMasterRegistryDBUrl,
-                    contexts: "all,pub",
+                    contexts: "all,pub,code-review",
                     dataLoadPath: symlinkPath + "/",
                     username: context.postgres.regTemplateOwnerRole,
                     password: context.postgres.regTemplateOwnerRolePass,

@@ -116,6 +116,7 @@ class CreateSchema {
                 "--contexts=${params.get("contexts")} " +
                 "--databaseChangeLogTableName=ddm_db_changelog " +
                 "--databaseChangeLogLockTableName=ddm_db_changelog_lock " +
+                "--logLevel=INFO " +
                 "update " +
                 "-Dconn.host=${params.get("connHost", "")} " +
                 "-Dconn.dbname=${params.get("connDbname", "")} " +
