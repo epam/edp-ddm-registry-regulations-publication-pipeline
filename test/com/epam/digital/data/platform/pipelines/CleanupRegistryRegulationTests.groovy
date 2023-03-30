@@ -61,7 +61,7 @@ class CleanupRegistryRegulationTests extends BasePipelineTest {
             return registryRegulationsCm
         })
         helper.registerAllowedMethod('httpRequest', [Map.class], {
-            return ["status": 200, "content": "{}"] })
+            return ["status": 200, "content": "{\"lastRunResult\": \"OK\", \"currentState\": \"WAITING\"}"] })
 
     }
 
@@ -141,12 +141,13 @@ class CleanupRegistryRegulationTests extends BasePipelineTest {
         assertEquals(context.cleanup.recreateDefaultCodebaseRelatedResources( "registry-regulations"), null)
     }
 
+
     @Test
-    void trigerManualNexusTaskTest() throws Exception {
-        assertEquals(context.cleanup.trigerManualNexusTask(), null)
+    void triggerManualNexusTask() throws Exception {
+        assertEquals(context.cleanup.triggerManualNexusTask("docker-delete-unused-manifest-and-tags", true), null)
         helper.registerAllowedMethod('httpRequest', [Map.class], {
-            return ["status": 404] })
-        assertEquals(context.cleanup.trigerManualNexusTask(), null)
+            return ["status": 404, "content": "{\"lastRunResult\": \"OK\", \"currentState\": \"WAITING\"}"] })
+        assertEquals(context.cleanup.triggerManualNexusTask("docker-delete-unused-manifest-and-tags", true), null)
     }
 
     @Test

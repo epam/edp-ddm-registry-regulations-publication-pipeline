@@ -105,23 +105,48 @@ class CleanupRegistryRegulation {
         }
     }
 
-    void trigerManualNexusTask() {
-        String taskType = "repository.cleanup"
+    void triggerManualNexusTask(String taskName, Boolean waitTask = false) {
+        def taskId = ""
         String nexusUrl = "http://nexus:8081/nexus/service/rest/v1/tasks"
         String nexusCredentialsId = context.dockerRegistry.NEXUS_CI_USER_SECRET
-        def taskId = ""
-        def nexusGetResponse = context.script.httpRequest url: nexusUrl,
+        def nexusGetResponse = context.script.httpRequest url: nexusUrl ,
                 httpMode: 'GET',
                 authentication: nexusCredentialsId,
                 validResponseCodes: '200,404',
                 quiet: true
-        if (nexusGetResponse.status.equals(200))
-            taskId = new JsonSlurperClassic().parseText(nexusGetResponse.content).items.findAll { it.type.equals(taskType) }.id[0]
+        if (nexusGetResponse.status.equals(200)) {
+            taskId = new JsonSlurperClassic().parseText(nexusGetResponse.content).items.findAll { it.name.equals(taskName) }.id[0]
+        }
         context.script.httpRequest url: nexusUrl + "/" + taskId + "/run",
                 httpMode: 'POST',
                 authentication: nexusCredentialsId,
                 customHeaders: [[name: 'Content-Type', value: "application/json"]],
                 validResponseCodes: '204',
                 quiet: true
+        if (waitTask) {
+            int maxAttempts = 5
+            int attempt = 0
+            boolean requestStatus = false
+            while (!requestStatus) {
+                attempt++
+                if (attempt == maxAttempts) {
+                    context.script.error("Error while wait ${taskName} task")
+                }
+                def response = context.script.httpRequest url: nexusUrl + "/" + taskId,
+                        httpMode: 'GET',
+                        authentication: nexusCredentialsId,
+                        validResponseCodes: '200,404',
+                        quiet: true
+                def responseStatus = new JsonSlurperClassic().parseText(response.content).lastRunResult
+                def responseStatusState = new JsonSlurperClassic().parseText(response.content).currentState
+                context.logger.info("Wait nexus task ${taskName}")
+                if (responseStatus == "OK" && responseStatusState == "WAITING") {
+                    requestStatus = true
+                    context.logger.info("Task ${taskName} ran successfully")
+                } else {
+                    context.script.sleep(15)
+                }
+            }
+        }
     }
 }

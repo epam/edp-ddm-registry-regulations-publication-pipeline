@@ -74,7 +74,11 @@ class CleanUpTrigger {
 
         parallelDeletion["cleanUpNexus"] = {
             context.logger.info("Remove artifacts from Nexus repositories")
-            context.cleanup.trigerManualNexusTask()
+            ["Cleanup service":true, "docker-delete-unused-manifest-and-tags":true,
+             "rebuild-repository-index":true, "compact-blobstore-docker-registry":true,
+             "compact-blobstore-edp-maven":true].each { taskName, waitTask ->
+                context.cleanup.triggerManualNexusTask(taskName, waitTask)
+            }
         }
         context.script.parallel(parallelDeletion)
 
