@@ -33,7 +33,7 @@ class cronCleanupOfVersionCandidateDatabases {
         context.script.sshagent(["${context.gitServer.credentialsId}"]) {
             versionCandidateIdArray = context.script.sh(script: "ssh -oStrictHostKeyChecking=no -p ${context.gitServer.sshPort} " +
                     "${context.gitServer.autouser}@${context.gitServer.host} gerrit query --format=JSON status:open project:registry-regulations " +
-                    "| awk -F'number:' '{print \$2}' | sed 's/^ *//; s/ *\$//; /^\$/d'", returnStdout: true).tokenize('\n')
+                    "| sed -e 's/[{}]/''/g' | sed s/\\\"//g | awk -v RS=',' -F: '\$1==\"number\"{print \$2}'", returnStdout: true).tokenize('\n')
             crunchyDBsArray = context.postgres.psqlCommand(context.postgres.masterPod, "select datname from pg_database",
                     "postgres", context.postgres.operational_pg_user).tokenize('\n')
             crunchyDBsArray.each {
