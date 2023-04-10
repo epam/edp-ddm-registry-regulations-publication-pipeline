@@ -69,6 +69,14 @@ class DeployProjects {
                         parametersMap.put("keycloak.customHost", context.keycloakCustomHost)
                     }
 
+                    if (dataComponent.name == DataComponentType.SOAP_API.getValue()) {
+                        context.logger.info("Add trembita IPs to SOAP api")
+                        LinkedHashMap registryValues = context.script.readYaml text: context.script.sh(script: """helm get values registry-nodes -a -n ${context.namespace}""", returnStdout: true)
+                        if (registryValues["trembita"]["ipList"])
+                            parametersMap.put("trembita.ipList", "\"{${registryValues["trembita"]["ipList"].join(',')}}\"")
+                        context.logger.info("Parameters: ${parametersMap}")
+                    }
+
                     String fileParameters = ""
                     String dataComponentNameNormalized = dataComponent.name.replace('-','').replace('api',"Api")
                     if (platformValuesPath.global.registry?."${dataComponentNameNormalized}") {
