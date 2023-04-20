@@ -44,8 +44,8 @@ class Redash {
 
     void init() {
         this.deploymentMode = context.getParameterValue("DEPLOYMENT_MODE", "development")
-        viewerUrl = "http://redash-viewer"
-        adminUrl = "http://redash-admin"
+        viewerUrl = "http://redash-viewer/reports"
+        adminUrl = "http://redash-admin/reports"
         redashSecretJson = context.platform.getAsJson("secret", REDASH_API_KEY_SECRET)["data"]
         context.script.retry(5) {
             viewerApiKey = DecodeHelper.decodeBase64(redashSecretJson[VIEWER_KEY_JSON_PATH])
