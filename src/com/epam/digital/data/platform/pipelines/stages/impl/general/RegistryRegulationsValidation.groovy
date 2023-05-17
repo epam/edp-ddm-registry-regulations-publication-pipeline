@@ -45,7 +45,8 @@ class RegistryRegulationsValidation {
                 "--inbox-notification-template-folder=notifications/inbox " +
                 "--diia-notification-template-folder=notifications/diia " +
                 "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv " +
-                "--bp-grouping-files=bp-grouping/bp-grouping.yml "
+                "--bp-grouping-files=bp-grouping/bp-grouping.yml " +
+                "--mock-integration-files=${context.registryRegulations.getAllRegulations(RegulationType.MOCK_INTEGRATIONS).join(",")} "
 
         if (context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE_PATH)) {
             validatorParams += "--registry-settings-files=${context.registry.REGISTRY_SETTINGS_FILE_PATH} "

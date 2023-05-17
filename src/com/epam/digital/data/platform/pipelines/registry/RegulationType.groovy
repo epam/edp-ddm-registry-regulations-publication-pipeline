@@ -29,7 +29,8 @@ enum RegulationType {
     EXCERPTS("excerpts"),
     NOTIFICATION_TEMPLATES("notifications"),
     REGISTRY_SETTINGS("settings"),
-    BP_GROUPING("bp-grouping")
+    BP_GROUPING("bp-grouping"),
+    MOCK_INTEGRATIONS("mock-integrations")
 
     private String value
 
