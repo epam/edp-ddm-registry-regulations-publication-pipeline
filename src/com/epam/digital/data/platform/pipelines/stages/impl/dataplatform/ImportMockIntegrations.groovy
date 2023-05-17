@@ -30,7 +30,8 @@ class ImportMockIntegrations {
         String wiremockUrlMappings = "http://wiremock:9021/__admin/mappings"
         try {
             def files = context.script.findFiles(glob: 'mock-integrations/*.json')
-            if (files[0]) {
+            boolean filesExists = files.length > 0
+            if (filesExists) {
                 context.logger.info("Deleting old mappings")
                 context.script.httpRequest(
                     httpMode: 'DELETE',
