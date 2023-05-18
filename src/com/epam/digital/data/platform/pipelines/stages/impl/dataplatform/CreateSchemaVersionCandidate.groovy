@@ -48,69 +48,83 @@ class CreateSchemaVersionCandidate {
         String registryVersionFromVersionCandidate = settingsYaml["settings"]["general"]["version"]
 
         boolean isDataModelChanged = isDataModelChanged(operationalMasterRegistryDBUrl, symlinkPath)
+        context.script.sshagent(["${context.gitServer.credentialsId}"]) {
+            ArrayList versionCandidateCounter = context.script.sh(script: "ssh -oStrictHostKeyChecking=no -p ${context.gitServer.sshPort} " +
+                    "${context.gitServer.autouser}@${context.gitServer.host} gerrit query --format=JSON status:open project:registry-regulations " +
+                    "| sed -e 's/[{}]/''/g' | sed s/\\\"//g | awk -v RS=',' -F: '\$1==\"number\"{print \$2}'", returnStdout: true).tokenize('\n')
+if (versionCandidateCounter.isEmpty()) {
+versionCandidateCounter.add(context.script.env.GERRIT_CHANGE_NUMBER)
+}
+def versionCandidateCounterInt = versionCandidateCounter.collect { it.toInteger() }
+versionCandidateCounterInt.sort()
+            int maxCandidateVersions = context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
+                    ".data.maxCandidateVersions").toInteger()
+            if (versionCandidateCounterInt.size().toInteger() <= maxCandidateVersions || versionCandidateCounterInt.subList(0,maxCandidateVersions).contains(context.script.env.GERRIT_CHANGE_NUMBER.toInteger())) {
+                if (isDataModelChanged) {
+                    try {
+                        // always drop temporary version candidate database if exists
+                        context.script.sh(script: "git checkout master")
+                        context.logger.info("Remove old temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
+                        context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" dropdb --force --if-exists registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} -h localhost'", "database")
 
-        if (isDataModelChanged) {
-            try {
-                // always drop temporary version candidate database if exists
-                context.script.sh(script: "git checkout master")
-                context.logger.info("Remove old temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
-                context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" dropdb --force --if-exists registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} -h localhost'", "database")
+                        // create temporary version candidate database
+                        context.logger.info("Create new temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
+                        context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" psql -d registry_template -h localhost -c \"select pid, pg_terminate_backend(pid) from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid();\"'", "database")
+                        context.platform.podExec(context.postgres.masterPod, "bash -c 'createdb -O ${context.postgres.regTemplateOwnerRole} -T registry_template registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}'", "database")
 
-                // create temporary version candidate database
-                context.logger.info("Create new temporary database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}")
-                context.platform.podExec(context.postgres.masterPod, "bash -c 'PGPASSWORD=\"${context.postgres.operational_pg_password}\" psql -d registry_template -h localhost -c \"select pid, pg_terminate_backend(pid) from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid();\"'", "database")
-                context.platform.podExec(context.postgres.masterPod, "bash -c 'createdb -O ${context.postgres.regTemplateOwnerRole} -T registry_template registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}'", "database")
+                        // set searh_path to temp database
+                        context.platform.podExec(context.postgres.masterPod, "bash -c \"psql -c \'alter database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} set search_path to \\\"\\\$user\\\", registry, public;\'\"", "database")
 
-                // set searh_path to temp database
-                context.platform.podExec(context.postgres.masterPod, "bash -c \"psql -c \'alter database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} set search_path to \\\"\\\$user\\\", registry, public;\'\"", "database")
+                        // grant connect to registry_regulation_management_role
+                        context.platform.podExec(context.postgres.masterPod, "bash -c 'psql -c \"grant connect on database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} to ${context.postgres.regRegulationRole};\"'", "database")
 
-                // grant connect to registry_regulation_management_role
-                context.platform.podExec(context.postgres.masterPod, "bash -c 'psql -c \"grant connect on database registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER} to ${context.postgres.regRegulationRole};\"'", "database")
+                        // remove data-load from previous using and copy data-load files from master branch
+                        context.logger.info("Remove data-load from previous using")
+                        try {
+                            removeDataLoadFiles(dataLoadPath, symlinkPath)
+                            context.logger.info("Copying data-load from master branch")
+                            copyDataLoadFiles(dataLoadPath, symlinkPath)
+                        }
+                        catch (any) {
+                            context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
+                        }
 
-                // remove data-load from previous using and copy data-load files from master branch
-                context.logger.info("Remove data-load from previous using")
-                try {
-                    removeDataLoadFiles(dataLoadPath, symlinkPath)
-                    context.logger.info("Copying data-load from master branch")
-                    copyDataLoadFiles(dataLoadPath, symlinkPath)
+                        context.logger.info("Applying Liquibase from master")
+                        runUpdateLiquibase(operationalMasterRegistryDBUrl, registryVersionFromMaster, dataLoadPath, symlinkPath)
+                    }
+                    catch (any) {
+                        context.logger.warn("Something went wrong when applying Liquibase from master")
+                    }
+
+                    if (doesVersionCandidateHasChangesInDataLoad) {
+                        context.logger.info("Cloning ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
+                        context.script.sshagent(["${context.gitServer.credentialsId}"]) {
+                            context.script.sh(script: "git fetch origin ${context.script.env.GERRIT_REFSPEC} && git checkout FETCH_HEAD")
+                        }
+
+                        // remove data from previous using and copy data-load files from version candidate
+                        context.logger.info("Remove data-load from previous using")
+                        try {
+                            removeDataLoadFiles(dataLoadPath, symlinkPath)
+                            context.logger.info("Copying data-load from version candidate")
+                            copyDataLoadFiles(dataLoadPath, symlinkPath)
+                        }
+                        catch (any) {
+                            context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
+                        }
+
+                        context.logger.info("Applying Liquibase from ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
+                        runUpdateLiquibase(operationalMasterRegistryDBUrl, registryVersionFromVersionCandidate, dataLoadPath, symlinkPath)
+                    } else {
+                        context.logger.info("Skip applying Liquibase from version candidate.")
+                    }
+                } else {
+                    context.logger.info("Data-Model hasn't been changed. Skip applying liquibase.")
                 }
-                catch (any) {
-                    context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
-                }
-
-                context.logger.info("Applying Liquibase from master")
-                runUpdateLiquibase(operationalMasterRegistryDBUrl ,registryVersionFromMaster, dataLoadPath, symlinkPath)
-            }
-            catch (any) {
-                context.logger.warn("Something went wrong when applying Liquibase from master")
-            }
-
-            if (doesVersionCandidateHasChangesInDataLoad) {
-                context.logger.info("Cloning ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
-                context.script.sshagent(["${context.gitServer.credentialsId}"]) {
-                    context.script.sh(script: "git fetch origin ${context.script.env.GERRIT_REFSPEC} && git checkout FETCH_HEAD")
-                }
-
-                // remove data from previous using and copy data-load files from version candidate
-                context.logger.info("Remove data-load from previous using")
-                try {
-                    removeDataLoadFiles(dataLoadPath, symlinkPath)
-                    context.logger.info("Copying data-load from version candidate")
-                    copyDataLoadFiles(dataLoadPath, symlinkPath)
-                }
-                catch (any) {
-                    context.logger.warn("Failed to copy data-model/data-load to ${context.postgres.masterPod}")
-                }
-
-                context.logger.info("Applying Liquibase from ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
-                runUpdateLiquibase(operationalMasterRegistryDBUrl, registryVersionFromVersionCandidate, dataLoadPath, symlinkPath)
-            }
-            else {
-                context.logger.info("Skip applying Liquibase from version candidate.")
+            } else {
+                context.script.error("You have reached a threshold in version candidates! Current limit is: $maxCandidateVersions")
             }
         }
-        else
-            context.logger.info("Data-Model hasn't been changed. Skip applying liquibase.")
     }
 
     private String runLiquibase(LinkedHashMap params, String method) {
@@ -184,7 +198,7 @@ class CreateSchemaVersionCandidate {
                     username: context.postgres.regTemplateOwnerRole,
                     password: context.postgres.regTemplateOwnerRolePass,
                     "status")
-        } catch(any) {
+        } catch (any) {
             context.logger.info("Failed to run liquibase or database not found")
             liquibaseStatus = "Failed to run liquibase or database not found"
         }
