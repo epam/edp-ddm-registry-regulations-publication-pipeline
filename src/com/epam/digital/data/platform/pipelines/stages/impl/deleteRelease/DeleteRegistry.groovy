@@ -30,6 +30,7 @@ class DeleteRegistry {
     private String CLEANUP_PROCESS_HISTORY_SQL = "CleanupProcessHistory.sql"
     private String CLEANUP_REDASH_USERS_SQL = "CleanupRedashUsers.sql"
     private String REDASH_POD_NAME = "redash-viewer-postgresql-0"
+    private String REDASH_VIEWER_SECRET = "redash-viewer-secret"
 
     void run() {
         LinkedHashMap parallelDeletion = [:]
@@ -54,7 +55,7 @@ class DeleteRegistry {
                     context.registry.name, context.postgres.analytical_pg_user).trim()
 
             context.logger.info("Deleting the analytical subscription")
-            context.postgres.psqlCommand(context.postgres.masterRepPod,"DROP SUBSCRIPTION operational_sub;",
+            context.postgres.psqlCommand(context.postgres.masterRepPod, "DROP SUBSCRIPTION operational_sub;",
                     context.registry.name, context.postgres.analytical_pg_user)
 
             context.logger.info("Cleaning registry DB on analytical cluster")
@@ -103,7 +104,7 @@ class DeleteRegistry {
             context.script.writeFile(file: "sql_redash/${CLEANUP_REDASH_USERS_SQL}", text: cleanupRedashUsers)
             context.script.sh(script: "oc rsync --no-perms=true sql_redash/ ${REDASH_POD_NAME}:/tmp/")
             context.platform.podExec(REDASH_POD_NAME,
-                    "bash -c \'export PGPASSWORD=${context.platform.getSecretValue("redash-secrets", "postgresqlPassword")}; psql redash -U redash -f tmp/${CLEANUP_REDASH_USERS_SQL}\'", "")
+                    "bash -c \'export PGPASSWORD=${context.platform.getSecretValue(REDASH_VIEWER_SECRET, "postgresqlPassword")}; psql redash -U redash -f tmp/${CLEANUP_REDASH_USERS_SQL}\'", "")
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/dashboards",
                     context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",
