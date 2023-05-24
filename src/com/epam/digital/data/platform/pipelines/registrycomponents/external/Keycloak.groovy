@@ -41,7 +41,7 @@ class Keycloak {
         context.logger.info("Receiving ${kc.clientId} access token")
         String token
         String tokenEndpoint = "${url}/auth/realms/${kc.realm}/protocol/openid-connect/token"
-        int maxAttempts = 5
+        int maxAttempts = 10
         int attempt = 0
         boolean requestStatus = false
         while (!requestStatus) {
@@ -61,7 +61,7 @@ class Keycloak {
             }
             catch (any) {
                 requestStatus = false
-                context.script.sleep(5)
+                context.script.sleep(10)
             }
         }
 
