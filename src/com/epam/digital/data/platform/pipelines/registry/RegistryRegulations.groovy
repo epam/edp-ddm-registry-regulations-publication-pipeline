@@ -37,7 +37,7 @@ class RegistryRegulations {
             try {
                 changedRegulations = context.script.sh(script: "git diff HEAD~1 HEAD -m -1 --name-only " +
                         "--diff-filter=ACMRT " +
-                        "--pretty='format:' | grep -E \"${regulationType.value}\" | grep -v .git", returnStdout: true)
+                        "--pretty='format:' | grep -E \"${regulationType.value}\" | grep -v -x \"${regulationType.value}\"/.gitkeep", returnStdout: true)
                         .tokenize('\n')
                 context.logger.debug(changedRegulations.toString())
             } catch (any) {
