@@ -69,6 +69,11 @@ class DeployProjects {
                         parametersMap.put("keycloak.customHost", context.keycloakCustomHost)
                     }
 
+                    String clusterVersion = platformValuesPath["global"]["clusterVersion"]
+                    if (keycloakCustomHost != null) {
+                        parametersMap.put("global.clusterVersion", clusterVersion)
+                    }
+
                     if (dataComponent.name == DataComponentType.SOAP_API.getValue()) {
                         context.logger.info("Add trembita IPs to SOAP api")
                         LinkedHashMap registryValues = context.script.readYaml text: context.script.sh(script: """helm get values registry-nodes -a -n ${context.namespace}""", returnStdout: true)
