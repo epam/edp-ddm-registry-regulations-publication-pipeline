@@ -70,7 +70,7 @@ class DeployProjects {
                     }
 
                     String clusterVersion = platformValuesPath["global"]["clusterVersion"]
-                    if (keycloakCustomHost != null) {
+                    if (clusterVersion != null) {
                         parametersMap.put("global.clusterVersion", clusterVersion)
                     }
 
