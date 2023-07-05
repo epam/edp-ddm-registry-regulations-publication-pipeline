@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 EPAM Systems.
+ * Copyright 2023 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,24 +145,17 @@ class Redash {
     }
 
     void deleteRedashResource(String url, String apiKey) {
-        def response = context.script.httpRequest url: "${url}",
-                httpMode: "GET",
-                customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
-                consoleLogResponseBody: context.logLevel == "DEBUG",
-                quiet: context.logLevel != "DEBUG",
-                validResponseCodes: "200"
-        def parsedJson = new JsonSlurperClassic().parseText(response.content)
+        def content = getContent(url, apiKey)
+        def parsedJson = new JsonSlurperClassic().parseText(content)
         if (url.contains("api/dashboards")) {
-            int dashboardCount = parsedJson["count"]
-            dashboardCount.times {
-                int dashboard_id = parsedJson["results"][it]["id"]
-                    context.logger.info("Removing dashboard: " + parsedJson["results"][it]["name"])
-                    context.script.httpRequest url: "${url}/${dashboard_id}",
-                            httpMode: "DELETE",
-                            customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
-                            consoleLogResponseBody: context.logLevel == "DEBUG",
-                            quiet: context.logLevel != "DEBUG",
-                            validResponseCodes: "200,204"
+            removeDashboards(parsedJson, url, apiKey)
+            def defaultPageSize = parsedJson.results.size()
+            def countLeftToDelete = parsedJson.count - defaultPageSize
+            def numberOfIterations = countLeftToDelete > 0 ? Math.ceil(countLeftToDelete / defaultPageSize) : 0
+            numberOfIterations.times {
+                content = getContent(url, apiKey)
+                parsedJson = new JsonSlurperClassic().parseText(content)
+                removeDashboards(parsedJson, url, apiKey)
             }
         } else {
             int resourcesCount = parsedJson.size()
@@ -182,6 +175,28 @@ class Redash {
                             validResponseCodes: "200,204"
                 }
             }
+        }
+    }
+
+    private String getContent(String url, String apiKey) {
+        def response = context.script.httpRequest url: "${url}",
+                httpMode: "GET",
+                customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
+                consoleLogResponseBody: context.logLevel == "DEBUG",
+                quiet: context.logLevel != "DEBUG",
+                validResponseCodes: "200"
+        return response.content
+    }
+
+    private void removeDashboards(Object parsedJsonResponse, String url, String apiKey) {
+        parsedJsonResponse.results.each { dashboard ->
+            context.logger.info("Removing dashboard: ${dashboard.name}")
+            context.script.httpRequest url: "${url}/${dashboard.id}",
+                    httpMode: "DELETE",
+                    customHeaders: [[name: "authorization", value: apiKey, maskValue: true]],
+                    consoleLogResponseBody: context.logLevel == "DEBUG",
+                    quiet: context.logLevel != "DEBUG",
+                    validResponseCodes: "200,204"
         }
     }
 }
