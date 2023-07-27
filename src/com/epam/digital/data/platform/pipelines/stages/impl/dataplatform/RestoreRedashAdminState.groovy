@@ -20,8 +20,8 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 
-@Stage(name = "create-redash-snippets", buildTool = ["any"], type = [ProjectType.LIBRARY])
-class CreateRedashSnippets {
+@Stage(name = "restore-redash-admin-state", buildTool = ["any"], type = [ProjectType.LIBRARY])
+class RestoreRedashAdminState {
     BuildContext context
 
     private final String REDASH_PUBLISHER_JAR = "/home/jenkins/report-publisher/report-publisher.jar"
@@ -38,7 +38,7 @@ class CreateRedashSnippets {
             context.logger.debug("Redash admin response: ${response.content}")
             if (response.content == "[]") {
                 try {
-                    context.logger.info("Publishing redash snippets")
+                    context.logger.info("Redash-admin is empty. Start restoring...")
                     context.script.sh(script: "set +x; java -jar " +
                             "-DREDASH_URL=${context.redash.adminUrl} " +
                             "-DREDASH_API_KEY=${context.redash.adminApiKey} " +
@@ -52,14 +52,14 @@ class CreateRedashSnippets {
                             "${REDASH_PUBLISHER_JAR} " +
                             "--reports " +
                             "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
-                    context.logger.info("Redash snippets have been successfully published")
+                    context.logger.info("Redash-admin has been successfully restored!")
                 }
                 catch (any) {
-                    context.script.error("Publishing snippets failed")
+                    context.script.error("Error during restoring Redash-admin(")
                 }
-                context.logger.info("Redash snippets creation have been finished")
+                context.logger.info("Redash-admin restoring have been finished.")
             } else {
-                context.logger.info("Redash snippets are already published")
+                context.logger.info("Redash-admin is not empty. Skipping restoring.")
             }
         }
     }
