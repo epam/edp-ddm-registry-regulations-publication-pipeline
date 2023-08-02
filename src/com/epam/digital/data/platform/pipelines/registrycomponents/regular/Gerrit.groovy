@@ -42,12 +42,8 @@ class Gerrit extends GitServer {
     boolean deleteRepository(String repoName) {
         String gerritProjectCrName = "gerrit-${repoName.replaceAll("\\.", "-")}"
         context.script.sshagent(["${credentialsId}"]) {
-            if (context.platform.checkObjectExists("gerritproject", gerritProjectCrName)) {
                 deleteRepoCli(repoName)
                 context.platform.deleteObject(GERRIT_PROJECT_CR, gerritProjectCrName)
-            } else {
-                deleteRepoCli(repoName)
-            }
         }
         context.logger.debug("Project ${repoName} was successfully removed from gerrit.")
     }
