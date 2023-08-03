@@ -49,7 +49,7 @@ class DeployProjects {
                             'image.version'      : dataComponent.version,
                             'dockerProxyRegistry': context.dockerRegistry.proxyHost,
                             'version'            : dataComponent.version,
-                            'keycloak.url'       : context.keycloak.url,
+                            'keycloak.url'       : context.keycloak.url + "/auth",
                             'deployProfile'      : context.registryRegulations.getRegistryConfValues(true),
                             'nexusPullSecret'    : context.dockerRegistry.PUSH_SECRET
                     ]

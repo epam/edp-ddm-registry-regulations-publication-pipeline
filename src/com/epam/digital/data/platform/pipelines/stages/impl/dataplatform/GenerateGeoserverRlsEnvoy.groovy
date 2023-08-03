@@ -34,7 +34,8 @@ class GenerateGeoserverRlsEnvoy {
               "/platform-values.yaml"
       LinkedHashMap<String, String> parametersMap = [
               'namespace'          : context.namespace,
-              'keycloak.host'      : platformValuesPath["keycloak"]["host"]
+              'keycloak.host'      : platformValuesPath["keycloak"]["host"],
+              'keycloak.url'       : context.keycloak.url + "/auth"
       ]
 
       Helm.upgrade(context, "registry-geoserver-rls", DEPLOY_TEMPLATES_PATH,
