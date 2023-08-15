@@ -26,7 +26,8 @@ class CreateSchemaVersionCandidate {
 
     private final String LIQUIBASE_JAR = "/home/jenkins/liquibase/liquibase.jar"
     private final String LIQUIBASE_CLASSPATH = "/home/jenkins/liquibase/lib/postgresql-42.3.3.jar:" +
-            "/home/jenkins/liquibase/lib/liquibase-ddm-ext.jar"
+            "/home/jenkins/liquibase/lib/liquibase-ddm-ext.jar:/home/jenkins/liquibase/lib/jackson-databind.jar:" +
+            "/home/jenkins/liquibase/lib/jackson-core.jar:/home/jenkins/liquibase/lib/jackson-annotations.jar"
     private final String LIQUIBASE_PRE_DEPLOY_SCRIPT = "../../liquibase-repositories/changelog-master-pre-deploy.xml"
     private final String LIQUIBASE_MAIN_SCRIPT = "data-model/main-liquibase.xml"
     private final String LIQUIBASE_POST_DEPLOY_SCRIPT = "../../liquibase-repositories/changelog-master-post-deploy.xml"
