@@ -34,6 +34,16 @@ class GitClient {
                                                                       url          : url]]])
     }
 
+    void gerritCheckout(String url, String branch, String refspecName, String credentialsId) {
+        context.script.checkout([$class                           : 'GitSCM',
+                                 branches                         : [[name: branch]],
+                                 doGenerateSubmoduleConfigurations: false, extensions: [],
+                                 submoduleCfg                     : [],
+                                 userRemoteConfigs                : [[refspec      : "${refspecName}:${branch}",
+                                                                      credentialsId: credentialsId,
+                                                                      url          : url]]])
+    }
+
     void gitSetConfig() {
         context.script.sh(script: "git config --global user.email ${context.gitServer.autouser}@epam.com; " +
                 "git config --global user.name ${context.gitServer.autouser}; " +

@@ -39,10 +39,6 @@ class CreateSchemaVersionCandidate {
         String operationalMasterRegistryDBUrl = "jdbc:postgresql://${context.postgres.OPERATIONAL_MASTER_URL}:" +
                 "${context.postgres.OPERATIONAL_MASTER_PORT}/registry_dev_${context.script.env.GERRIT_CHANGE_NUMBER}"
 
-        context.script.sshagent(["${context.gitServer.credentialsId}"]) {
-            context.script.sh(script: "git fetch origin ${context.script.env.GERRIT_REFSPEC} && git checkout FETCH_HEAD")
-        }
-
         boolean doesVersionCandidateHasChangesInDataLoad = context.script.sh(script: "if [[ -n \$(git diff HEAD HEAD~1 --stat | grep data-model) ]]; then echo true; else echo false; fi", returnStdout: true).trim().toBoolean()
         LinkedHashMap settingsYaml = context.script.readYaml file: context.registry.SETTINGS_FILE
         String registryVersionFromVersionCandidate = settingsYaml["settings"]["general"]["version"]
@@ -97,11 +93,6 @@ versionCandidateCounterInt.sort()
                     }
 
                     if (doesVersionCandidateHasChangesInDataLoad) {
-                        context.logger.info("Cloning ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
-                        context.script.sshagent(["${context.gitServer.credentialsId}"]) {
-                            context.script.sh(script: "git fetch origin ${context.script.env.GERRIT_REFSPEC} && git checkout FETCH_HEAD")
-                        }
-
                         // remove data from previous using and copy data-load files from version candidate
                         context.logger.info("Remove data-load from previous using")
                         try {
