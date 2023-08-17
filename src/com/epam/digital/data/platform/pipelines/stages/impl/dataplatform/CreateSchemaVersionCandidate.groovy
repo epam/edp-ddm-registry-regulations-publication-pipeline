@@ -179,7 +179,7 @@ versionCandidateCounterInt.sort()
     }
 
     private boolean isDataModelChanged(String operationalMasterRegistryDBUrl, String symlinkPath) {
-        context.logger.info("Check if data-model has been changed")
+        context.logger.info("Check if data-model has been changed or does not exist")
         String liquibaseStatus
         try {
             liquibaseStatus = runLiquibase(changeLogFile: LIQUIBASE_MAIN_SCRIPT,
