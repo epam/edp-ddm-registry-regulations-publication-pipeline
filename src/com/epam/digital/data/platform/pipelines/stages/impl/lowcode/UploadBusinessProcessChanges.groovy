@@ -27,16 +27,28 @@ class UploadBusinessProcessChanges {
     BuildContext context
 
     void run() {
-        ArrayList<String> changedBPFiles = context.registryRegulations.filesToDeploy.get(
-                RegulationType.BUSINESS_PROCESS) + context.registryRegulations.filesToDeploy.get(
-                RegulationType.BUSINESS_RULE)
+        ArrayList<String> changedBPFiles
+        if (context.getParameterValue("FULL_DEPLOY", "false").toBoolean()) {
+            changedBPFiles = context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS).join(",").tokenize(',') +
+                    context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_RULE).join(",").tokenize(',')
+        } else {
+            changedBPFiles = context.registryRegulations.getChangedStatusOrFiles("plan",
+                    "upload-business-process-changes", "--file-detailed ${context.getWorkDir()}/${RegulationType.BUSINESS_PROCESS.value}," +
+                    "${context.getWorkDir()}/${RegulationType.BUSINESS_RULE.value}")
+        }
         if (changedBPFiles) {
             String token = context.keycloak.getAccessToken(context.jenkinsDeployer)
             changedBPFiles.each {
-                deploy(it, token)
+                if (!it.contains(".gitkeep")) {
+                    deploy(it, token)
+                }
             }
+            context.registryRegulations.getChangedStatusOrFiles("save",
+                    "upload-business-process-changes", "--file-detailed ${context.getWorkDir()}/${RegulationType.BUSINESS_PROCESS.value}," +
+                    "${context.getWorkDir()}/${RegulationType.BUSINESS_RULE.value}")
+
         } else {
-            context.logger.info("Skip ${RegulationType.BUSINESS_PROCESS.value} files deploy due to empty change list")
+            context.logger.info("Skip ${RegulationType.BUSINESS_PROCESS.value} and ${RegulationType.BUSINESS_RULE.value} files deploy due to empty change list")
         }
     }
 

@@ -26,6 +26,8 @@ class CreateTrembitaBusinessProcess {
     BuildContext context
 
     void run() {
+        if (context.registryRegulations.deployStatus("create-trembita-business-process",
+                "${RegulationType.BUSINESS_PROCESS_TREMBITA.value}")) {
         try {
             String BP_TREMBITA_FILE = "${RegulationType.BUSINESS_PROCESS_TREMBITA.value}/external-system.yml"
             String value = context.script.sh(script: """awk '{printf "%s%s\\n", "", \$0}' ${BP_TREMBITA_FILE}""",
@@ -40,7 +42,7 @@ class CreateTrembitaBusinessProcess {
             context.logger.error("Error during uploading trembita business process changes")
             context.stageFactory.runStage(context.RESTORE_STAGE, context)
         }
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.BUSINESS_PROCESS_TREMBITA)) {
+
             try {
                 String trembitaConfFile = "${RegulationType.BUSINESS_PROCESS_TREMBITA.value}/configuration.yml"
                 String trembitaConfigmapKey = "external-systems-endpoint-configuration.yml"
@@ -54,6 +56,8 @@ class CreateTrembitaBusinessProcess {
             catch (any) {
                 context.logger.error("Error during external-systems-endpoint-configuration configmap updating")
             }
+            context.registryRegulations.getChangedStatusOrFiles("save", "create-trembita-business-process",
+                    "--file ${context.getWorkDir()}/${RegulationType.BUSINESS_PROCESS_TREMBITA.value}")
         } else {
             context.logger.info("Skip trembita configuration creation due to empty change list")
         }

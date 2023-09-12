@@ -27,7 +27,8 @@ class UpdateBpGrouping {
     BuildContext context
 
     void run() {
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.BP_GROUPING)) {
+        if (context.registryRegulations.deployStatus("update-bp-grouping",
+                "${RegulationType.BP_GROUPING.value}")) {
             context.script.dir("${context.workDir}/${RegulationType.BP_GROUPING.value}") {
                 try {
                     context.logger.info("Updating bp-grouping configmap")
@@ -44,6 +45,10 @@ class UpdateBpGrouping {
                     context.stageFactory.runStage(context.RESTORE_STAGE, context)
                 }
             }
+            context.registryRegulations.getChangedStatusOrFiles("save", "update-bp-grouping",
+                    "--file ${context.getWorkDir()}/${RegulationType.BP_GROUPING.value}")
+        } else {
+            context.logger.info("Skip update-bp-grouping due to empty change list")
         }
     }
 }

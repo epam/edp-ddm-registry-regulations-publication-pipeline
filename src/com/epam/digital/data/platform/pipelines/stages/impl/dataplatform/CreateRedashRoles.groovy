@@ -31,7 +31,7 @@ class CreateRedashRoles {
     void run() {
         this.deploymentMode = context.getParameterValue("DEPLOYMENT_MODE", "development")
 
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.ROLES)) {
+        if (context.registryRegulations.deployStatus("create-redash-roles", "${RegulationType.ROLES.value}")) {
             context.logger.info("Creating redash ${RegulationType.ROLES.value}")
 
             if (deploymentMode.equals("development")) {
@@ -45,6 +45,8 @@ class CreateRedashRoles {
             context.logger.info("Other roles have been successfully created")
 
             context.logger.info("Redash ${RegulationType.ROLES.value} creation have been finished")
+            context.registryRegulations.getChangedStatusOrFiles("save", "create-redash-roles",
+                    "--file ${context.getWorkDir()}/${RegulationType.ROLES.value}")
         } else {
             context.logger.info("Skip redash ${RegulationType.ROLES.value} creation due to no changes")
         }

@@ -17,6 +17,7 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.dataplatform
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.registry.RegulationType
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 import groovy.json.JsonSlurperClassic
@@ -26,43 +27,52 @@ class ImportMockIntegrations {
     BuildContext context
 
     void run() {
-        String dirPath = "mock-integrations"
-        String wiremockUrlMappings = "http://wiremock:9021/__admin/mappings"
-        try {
-            def files = context.script.findFiles(glob: 'mock-integrations/*.json')
-            boolean filesExists = files.length > 0
-            if (filesExists) {
-                context.logger.info("Deleting old mappings")
-                context.script.httpRequest(
-                    httpMode: 'DELETE',
-                    validResponseCodes: '200',
-                    url: wiremockUrlMappings,
-                    quiet: true
-                )
-                files.each {
-                    String formJsonContent = context.script.readFile(file: "${dirPath}/${it.name}", encoding: "UTF-8")
-                    context.logger.info("Importing mapping from file ${it.name}")
-                    def response = context.script.httpRequest(
-                        contentType: 'APPLICATION_JSON_UTF8',
-                        httpMode: 'POST',
-                        requestBody: formJsonContent,
-                        validResponseCodes: '200,422',
-                        url: wiremockUrlMappings + "/import"
+        if (context.registryRegulations.deployStatus("import-mock-integrations", "${RegulationType.MOCK_INTEGRATIONS.value}")
+                || context.getParameterValue("FULL_DEPLOY", "false").toBoolean()) {
+            String dirPath = "mock-integrations"
+            String wiremockUrlMappings = "http://wiremock:9021/__admin/mappings"
+            try {
+                def files = context.script.findFiles(glob: 'mock-integrations/*.json')
+                boolean filesExists = files.length > 0
+                if (filesExists) {
+                    context.logger.info("Deleting old mappings")
+                    context.script.httpRequest(
+                            httpMode: 'DELETE',
+                            validResponseCodes: '200',
+                            url: wiremockUrlMappings,
+                            quiet: true
                     )
-                    if (response .status.equals(422)) {
-                       String msgResponse = new JsonSlurperClassic().parseText(response.getContent())
-                       context.logger.error("Something with mapping ${it.name}. Response: ${msgResponse}")
+                    files.each {
+                        String formJsonContent = context.script.readFile(file: "${dirPath}/${it.name}", encoding: "UTF-8")
+                        context.logger.info("Importing mapping from file ${it.name}")
+                        def response = context.script.httpRequest(
+                                contentType: 'APPLICATION_JSON_UTF8',
+                                httpMode: 'POST',
+                                requestBody: formJsonContent,
+                                validResponseCodes: '200,422',
+                                url: wiremockUrlMappings + "/import"
+                        )
+                        if (response.status.equals(422)) {
+                            String msgResponse = new JsonSlurperClassic().parseText(response.getContent())
+                            context.logger.error("Something with mapping ${it.name}. Response: ${msgResponse}")
+                        }
+                    }
+                    context.logger.info("Saving mappings...")
+                    context.script.httpRequest(
+                            httpMode: 'POST',
+                            url: wiremockUrlMappings + "/save",
+                            quiet: true
+                    )
+                    if (!context.getParameterValue("FULL_DEPLOY", "false").toBoolean()) {
+                        context.registryRegulations.getChangedStatusOrFiles("save", "import-mock-integrations",
+                                "--file ${context.getWorkDir()}/${RegulationType.MOCK_INTEGRATIONS.value}")
                     }
                 }
-                context.logger.info("Saving mappings...")
-                context.script.httpRequest(
-                    httpMode: 'POST',
-                    url: wiremockUrlMappings + "/save",
-                    quiet: true
-                )
+            } catch (any) {
+                context.script.error("Something went wrong while importing mappings!")
             }
-        } catch(any) {
-            context.script.error("Something went wrong while importing mappings!")
+        } else {
+            context.logger.info("Skip import-mock-integrations due to no changes")
         }
     }
 }

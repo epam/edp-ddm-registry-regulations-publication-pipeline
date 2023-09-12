@@ -26,17 +26,20 @@ class DeployDataModel {
     BuildContext context
 
     void run() {
-        try {
-            if (context.registryRegulations.filesToDeploy.get(RegulationType.DATA_MODEL)) {
+        if (context.registryRegulations.deployStatus("deploy-data-model",
+                "${RegulationType.DATA_MODEL.value}")) {
+            try {
                 context.logger.info("Deploying data model")
                 context.script.build job: "${context.codebase.name}/MASTER-Build-${context.codebase.name}-data-model",
                         wait: true, propagate: true
-            } else {
-                context.logger.info("Skip ${RegulationType.DATA_MODEL.value} data model deploying due to no changes")
+            } catch (any) {
+                context.logger.info("Data model deploy has been failed")
+                context.stageFactory.runStage(context.RESTORE_STAGE, context)
             }
-        } catch (any) {
-            context.logger.info("Data model deploy has been failed")
-            context.stageFactory.runStage(context.RESTORE_STAGE, context)
+            context.registryRegulations.getChangedStatusOrFiles("save", "deploy-data-model",
+                    "--file ${context.getWorkDir()}/${RegulationType.DATA_MODEL.value}")
+        } else {
+            context.logger.info("Skip ${RegulationType.DATA_MODEL.value} deploying due to no changes")
         }
     }
 }

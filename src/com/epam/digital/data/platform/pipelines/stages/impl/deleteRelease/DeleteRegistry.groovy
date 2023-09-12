@@ -36,6 +36,7 @@ class DeleteRegistry {
     void run() {
         LinkedHashMap parallelDeletion = [:]
         ArrayList systemRoles = []
+        String subconninfo
 
         parallelDeletion["cleanPostgresDB"] = {
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 0)
@@ -52,15 +53,28 @@ class DeleteRegistry {
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterRepPod}:/tmp/")
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterPod}:/tmp/")
 
-            context.logger.info("Get the subscription connection settings")
-            String subconninfo = context.postgres.psqlCommand(context.postgres.masterRepPod,
-                    "select subconninfo from pg_subscription where subname = 'operational_sub';",
-                    context.registry.name, context.postgres.analytical_pg_user).trim()
+            context.logger.info("Check the subscription")
+            Boolean subexist = context.postgres.psqlCommand(context.postgres.masterRepPod,
+                    "select 1 from pg_subscription where subname = 'operational_sub';",
+                    context.registry.name, context.postgres.analytical_pg_user).trim().toBoolean()
 
-            context.logger.info("Deleting the analytical subscription")
-            context.postgres.psqlCommand(context.postgres.masterRepPod, "DROP SUBSCRIPTION operational_sub;",
-                    context.registry.name, context.postgres.analytical_pg_user)
+            if (subexist) {
+                context.logger.info("Get the subscription connection settings")
+                subconninfo = context.postgres.psqlCommand(context.postgres.masterRepPod,
+                        "select subconninfo from pg_subscription where subname = 'operational_sub';",
+                        context.registry.name, context.postgres.analytical_pg_user).trim()
 
+                context.logger.info("Deleting the analytical subscription")
+                context.postgres.psqlCommand(context.postgres.masterRepPod, "DROP SUBSCRIPTION operational_sub;",
+                        context.registry.name, context.postgres.analytical_pg_user)
+            } else {
+                context.logger.info("Subscription doesn't exist. Configuring data for subscription creation.")
+                String getPassword = context.platform.getSecretValue("operational-pguser-postgres", "password")
+                String getPort = context.platform.getSecretValue("operational-pguser-postgres", "port")
+                String getUser = context.platform.getSecretValue("operational-pguser-postgres", "user")
+                subconninfo = "dbname=registry host=operational-primary user=${getUser} password=${getPassword} port=${getPort}"
+            }
+            
             context.logger.info("Cleaning registry DB on analytical cluster")
             context.postgres.psqlScript(context.postgres.masterRepPod, "/tmp/${CLEANUP_REGISTRY_SQL}", context.postgres.analytical_pg_user, "-d ${context.registry.name}")
 

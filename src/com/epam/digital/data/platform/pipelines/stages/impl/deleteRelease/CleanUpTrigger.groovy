@@ -88,9 +88,10 @@ class CleanUpTrigger {
                     context.logger.info("Removing ${context.codebase.name} codebasebranch and codebase CRs")
                     context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l affiliatedWith=$context.codebase.name")
                     context.platform.deleteObject(Codebase.CODEBASE_CR, context.codebase.name)
+                    context.platform.deleteObject("secret", "registry-regulation-state")
                 }
             } catch (any) {
-                context.script.error("Cannot gracefully remove ${context.codebase.name} codebase and codebasebranch CRs")
+                context.script.error("Cannot gracefully remove ${context.codebase.name} codebase, codebasebranch CRs or registry-regulation-state secret")
             }
             context.logger.info("Removing ${context.codebase.name} repo")
             context.gitServer.deleteRepository(context.codebase.name)

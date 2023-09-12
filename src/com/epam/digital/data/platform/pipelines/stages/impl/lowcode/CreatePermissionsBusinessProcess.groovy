@@ -29,8 +29,9 @@ class CreatePermissionsBusinessProcess {
     private final String CAMUNDA_AUTH_CLI = "/home/jenkins/camunda-auth-cli/camunda-auth-cli.jar"
 
     void run() {
-        try {
-            if (context.registryRegulations.filesToDeploy.get(RegulationType.BUSINESS_PROCESS_AUTH)) {
+        if (context.registryRegulations.deployStatus("create-permissions-business-process",
+                "${RegulationType.BUSINESS_PROCESS_AUTH.value}")) {
+            try {
                 context.logger.info("Creating ${RegulationType.BUSINESS_PROCESS_AUTH.value}")
                 ArrayList<String> filesList = []
                 context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS_AUTH).each { file ->
@@ -52,13 +53,16 @@ class CreatePermissionsBusinessProcess {
                             "--AUTH_FILES=${filesList.join(",")} ${context.logLevel == "DEBUG" ? "1>&2" : ""};" +
                             "rm -f ${tokenFile}")
                 }
-            } else {
-                context.logger.info("Skip ${RegulationType.BUSINESS_PROCESS_AUTH.value}" +
-                        " files upload due to empty change list")
+
+            } catch (any) {
+                context.logger.error("Error during creating business process permissions")
+                context.stageFactory.runStage(context.RESTORE_STAGE, context)
             }
-        } catch (any) {
-            context.logger.error("Error during creating business process permissions")
-            context.stageFactory.runStage(context.RESTORE_STAGE, context)
+            context.registryRegulations.getChangedStatusOrFiles("save", "create-permissions-business-process",
+                    "--file ${context.getWorkDir()}/${RegulationType.BUSINESS_PROCESS_AUTH.value}")
+        } else {
+            context.logger.info("Skip ${RegulationType.BUSINESS_PROCESS_AUTH.value}" +
+                    " files upload due to empty change list")
         }
     }
 }

@@ -17,5 +17,5 @@
 package com.epam.digital.data.platform.pipelines.registrycomponents.regular
 
 class NotificationService {
-    public static final String URL = 'http://ddm-notification-service'
+    public static final String URL = 'http://ddm-notification-service:8080'
 }

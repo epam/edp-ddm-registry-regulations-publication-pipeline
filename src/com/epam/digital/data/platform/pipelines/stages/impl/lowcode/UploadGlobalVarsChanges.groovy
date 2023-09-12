@@ -27,33 +27,41 @@ class UploadGlobalVarsChanges {
     BuildContext context
 
     void run() {
-        context.script.dir("${context.workDir}/${RegulationType.GLOBAL_VARS.value}") {
-            try {
-                context.logger.info("Updating camunda global vars")
-                String CAMUNDA_GLOBAL_VARS_FILE = "camunda-global-system-vars.yml"
-                String camundaGlobalVarsYaml = "camunda:\\n  system-variables:\\n" +
-                        "${context.script.sh(script: """x=4; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
+        if (context.registryRegulations.deployStatus("upload-global-vars-changes",
+                "${RegulationType.GLOBAL_VARS.value}")) {
+            context.script.dir("${context.workDir}/${RegulationType.GLOBAL_VARS.value}") {
+                try {
+                    context.logger.info("Updating camunda global vars")
+                    String CAMUNDA_GLOBAL_VARS_FILE = "camunda-global-system-vars.yml"
+                    String camundaGlobalVarsYaml = "camunda:\\n  system-variables:\\n" +
+                            "${context.script.sh(script: """x=4; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
-                context.bpmsConfigMapsChanged["globalVars"] = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
-                        CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml)
-                context.logger.info("Camunda global have been successfully updated")
+                    context.bpmsConfigMapsChanged["globalVars"] = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
+                            CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml)
+                    context.logger.info("Camunda global have been successfully updated")
 
-                context.logger.info("Updating registry env variables for portals")
-                String asJson = context.script.sh(script: """x=2; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s%s\\n", "", \$0, ","}' \
+                    context.logger.info("Updating registry env variables for portals")
+                    String asJson = context.script.sh(script: """x=2; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s%s\\n", "", \$0, ","}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true)
-                        .replaceAll("\n", "\\\\n")
-                        .replaceAll(': ', ': \'')
-                        .replaceAll(',', '\',')
-                String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson}};"
-                if (context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
-                        jsRegistryEnvVarsJson)) {
-                    context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
+                            .replaceAll("\n", "\\\\n")
+                            .replaceAll(': ', ': \'')
+                            .replaceAll(',', '\',')
+                    String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson}};"
+                    if (context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
+                            jsRegistryEnvVarsJson)) {
+                        context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
+                    }
+                    context.logger.info("Registry env variables have been successfully updated")
+
+                } catch (any) {
+                    context.logger.error("Error during uploading global variables changes")
+                    context.stageFactory.runStage(context.RESTORE_STAGE, context)
                 }
-                context.logger.info("Registry env variables have been successfully updated")
-            } catch (any) {
-                context.logger.error("Error during uploading global variables changes")
-                context.stageFactory.runStage(context.RESTORE_STAGE, context)
             }
+            context.registryRegulations.getChangedStatusOrFiles("save", "upload-global-vars-changes",
+                    "--file ${context.getWorkDir()}/${RegulationType.GLOBAL_VARS.value}")
+        } else {
+            context.logger.info("Skip upload-global-vars-changes due to no changes")
         }
     }
 }

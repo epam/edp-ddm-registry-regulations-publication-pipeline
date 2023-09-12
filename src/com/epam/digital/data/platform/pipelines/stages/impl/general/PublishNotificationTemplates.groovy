@@ -29,9 +29,12 @@ class PublishNotificationTemplates {
     private final String NOTIFICATION_TEMPLATES_PUBLISHER_JAR = "/home/jenkins/notification-template-publisher/notification-template-publisher.jar"
 
     void run() {
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.NOTIFICATION_TEMPLATES)) {
+        if (context.registryRegulations.deployStatus("publish-notification-templates",
+                "${RegulationType.NOTIFICATION_TEMPLATES.value}")) {
             context.logger.info("Publish notification templates")
             publishNotificationTemplates()
+            context.registryRegulations.getChangedStatusOrFiles("save", "publish-notification-templates",
+                    "--file ${context.getWorkDir()}/${RegulationType.NOTIFICATION_TEMPLATES.value}")
         } else {
             context.logger.info("Skip notification templates publishing due to no changes")
         }

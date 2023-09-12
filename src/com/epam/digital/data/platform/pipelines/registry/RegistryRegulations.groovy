@@ -21,31 +21,10 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 class RegistryRegulations {
     private final BuildContext context
 
-    public LinkedHashMap<RegulationType, ArrayList<String>> filesToDeploy = [:]
+    private final String REGISTRY_REGULATIONS_CLI_JAR = "/home/jenkins/registry-regulations-cli/registry-regulations-cli.jar"
 
     RegistryRegulations(BuildContext context) {
         this.context = context
-    }
-
-    ArrayList<String> getChangedRegulations(RegulationType regulationType) {
-        ArrayList<String> changedRegulations
-        boolean fullDeploy = context.getParameterValue("FULL_DEPLOY", "false").toBoolean()
-        if (fullDeploy) {
-            changedRegulations = getAllRegulations(regulationType)
-        } else {
-            context.logger.info("Get changed ${regulationType.value} files")
-            try {
-                changedRegulations = context.script.sh(script: "git diff HEAD~1 HEAD -m -1 --name-only " +
-                        "--diff-filter=ACMRT " +
-                        "--pretty='format:' | grep -E \"${regulationType.value}\" | grep -v -x \"${regulationType.value}\"/.gitkeep", returnStdout: true)
-                        .tokenize('\n')
-                context.logger.debug(changedRegulations.toString())
-            } catch (any) {
-                changedRegulations = []
-                context.logger.info("No changed ${regulationType.value} files found")
-            }
-        }
-        return changedRegulations
     }
 
     ArrayList<String> getAllRegulations(RegulationType regulationType) {
@@ -74,5 +53,45 @@ class RegistryRegulations {
             context.script.sh(script: "helm get values registry-configuration > ${platformValuesPath}")
             return platformValuesPath
         }
+    }
+
+    ArrayList getChangedStatusOrFiles(String cliCommand, String cliParams, String cliOpt) {
+        ArrayList regulationState = []
+        boolean fullDeploy = context.getParameterValue("FULL_DEPLOY", "false").toBoolean()
+        if (fullDeploy) {
+            regulationState.add("fullDeploy")
+            return regulationState
+        }
+        if (cliCommand == "plan") {
+            try {
+                regulationState = context.script.sh(script: "set +x; java -jar -DOPENSHIFT_NAMESPACE=${context.namespace} " +
+                        "${REGISTRY_REGULATIONS_CLI_JAR} ${cliCommand} ${cliParams} ${cliOpt}",
+                        returnStdout: true)
+                        .split("PlanCommandExecutionStart")[1]
+                        .split("PlanCommandExecutionEnd")[0]
+                        .trim()
+                        .tokenize(',')
+            }
+            catch (any) {
+                context.script.error("Registry regulations cli failed during retrieving changes")
+            }
+            return regulationState
+        } else {
+            String regulationStateLog = context.script.sh(script: "set +x; java -jar -DOPENSHIFT_NAMESPACE=${context.namespace} " +
+                    "${REGISTRY_REGULATIONS_CLI_JAR} ${cliCommand} ${cliParams} ${cliOpt}", returnStdout: true)
+            return regulationStateLog
+        }
+
+    }
+
+    boolean deployStatus(String stageName, String regulationFolderName) {
+        ArrayList getdeployStatus = getChangedStatusOrFiles("plan", "${stageName}",
+                "--file ${context.getWorkDir()}/${regulationFolderName}")
+        if (getdeployStatus.contains("fullDeploy") || getdeployStatus.contains("true")) {
+            return true
+        } else {
+            return false
+        }
+
     }
 }

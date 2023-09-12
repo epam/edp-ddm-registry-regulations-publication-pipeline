@@ -17,6 +17,7 @@
 package com.epam.digital.data.platform.pipelines.stages.impl.general
 
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
+import com.epam.digital.data.platform.pipelines.registry.RegulationType
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 
@@ -27,11 +28,18 @@ class GeoserverPublisher {
     private final String GEOSERVER_PUBLISHER_JAR = "/home/jenkins/geoserver-publisher/geoserver-publisher.jar"
 
     void run() {
-        if (context.platform.checkObjectExists("secret", "geo-server-admin-secret")) {
-            context.logger.info("Run geo-server publisher")
-            runGeoserverPublisher()
+        if (context.registryRegulations.deployStatus("publish-geoserver-configuration",
+                "${RegulationType.DATA_MODEL.value}")) {
+            if (context.platform.checkObjectExists("secret", "geo-server-admin-secret")) {
+                context.logger.info("Run geo-server publisher")
+                runGeoserverPublisher()
+            } else {
+                context.logger.info("Skip geo-server publisher due to no geo-server in registry")
+            }
+            context.registryRegulations.getChangedStatusOrFiles("save", "publish-geoserver-configuration",
+                    "--file ${context.getWorkDir()}/${RegulationType.DATA_MODEL.value}")
         } else {
-            context.logger.info("Skip geo-server publisher due to no geo-server in registry")
+            context.logger.info("Skip publish-geoserver-configuration due to no changes")
         }
     }
 
@@ -47,7 +55,7 @@ class GeoserverPublisher {
                     "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
                     "-DDB_NAME=registry " +
                     "-DGEOSERVER_LOGIN=admin " +
-                    "-DGEOSERVER_PASSWORD=${context.platform.getSecretValue("geo-server-admin-secret","password")} " +
+                    "-DGEOSERVER_PASSWORD=${context.platform.getSecretValue("geo-server-admin-secret", "password")} " +
                     "-DGEOSERVER_PUBLISHER_DB_PASSWORD=\'${context.postgres.operational_pg_password}\' " +
                     "-DGEOSERVER_PUBLISHER_DB_USER=${context.postgres.operational_pg_user} " +
                     "-DGEOSERVER_URL=http://officer-portal-geo-server:8080 " +

@@ -28,12 +28,22 @@ class UploadFormChanges {
     BuildContext context
 
     void run() {
-        ArrayList<String> changedFormFiles = context.registryRegulations.filesToDeploy.get(RegulationType.UI_FORM)
+        ArrayList<String> changedFormFiles
+        if (context.getParameterValue("FULL_DEPLOY", "false").toBoolean()) {
+            changedFormFiles = context.registryRegulations.getAllRegulations(RegulationType.UI_FORM).join(",").tokenize(',')
+        } else {
+            changedFormFiles = context.registryRegulations.getChangedStatusOrFiles("plan", "upload-form-changes",
+                    "--file-detailed ${context.getWorkDir()}/${RegulationType.UI_FORM.value}")
+        }
         if (changedFormFiles) {
             String token = context.keycloak.getAccessToken(context.jenkinsDeployer)
             changedFormFiles.each {
-                deployForm(it, token)
+                if (!it.contains(".gitkeep")) {
+                    deployForm(it, token)
+                }
             }
+            context.registryRegulations.getChangedStatusOrFiles("save", "upload-form-changes",
+                    "--file-detailed ${context.getWorkDir()}/${RegulationType.UI_FORM.value}")
         } else {
             context.logger.info("Skip ${RegulationType.UI_FORM.value} files deploy due to empty change list")
         }

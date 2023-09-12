@@ -28,7 +28,7 @@ class CreateReports {
     private final String REDASH_PUBLISHER_JAR = "/home/jenkins/report-publisher/report-publisher.jar"
 
     void run() {
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.REPORTS)) {
+        if (context.registryRegulations.deployStatus("create-reports", "${RegulationType.REPORTS.value}")) {
             try {
                 context.logger.info("Publishing redash ${RegulationType.REPORTS.value}")
                 context.script.sh(script: "set +x; java -jar " +
@@ -50,8 +50,11 @@ class CreateReports {
                 context.script.error("Publishing ${RegulationType.REPORTS.value} failed")
             }
             context.logger.info("Redash ${RegulationType.REPORTS.value} creation have been finished")
+                context.registryRegulations.getChangedStatusOrFiles("save", "create-reports",
+                        "--file ${context.getWorkDir()}/${RegulationType.REPORTS.value}")
         } else {
             context.logger.info("Skip redash ${RegulationType.REPORTS.value} publishing due to no changes")
         }
     }
 }
+

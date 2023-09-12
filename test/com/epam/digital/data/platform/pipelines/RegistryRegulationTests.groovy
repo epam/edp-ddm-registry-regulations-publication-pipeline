@@ -25,6 +25,7 @@ import org.junit.Before
 import org.junit.Test
 
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 
 class RegistryRegulationTests extends BasePipelineTest {
     Script script
@@ -40,22 +41,6 @@ class RegistryRegulationTests extends BasePipelineTest {
         registryRegulations = new RegistryRegulations(context)
     }
 
-    @Test
-    void getChangedRegulations() throws Exception {
-        mockSh(null)
-        assertEquals([], registryRegulations.getChangedRegulations(RegulationType.BUSINESS_PROCESS))
-        mockSh("bpms/test1.xml\n" +
-                "bpms/test2.xml")
-        assertEquals(["bpms/test1.xml", "bpms/test2.xml"],
-                registryRegulations.getChangedRegulations(RegulationType.BUSINESS_PROCESS))
-
-        context.script.env["FULL_DEPLOY"] = "true"
-        assertEquals(["bpms/test1.xml", "bpms/test2.xml"],
-                registryRegulations.getChangedRegulations(RegulationType.BUSINESS_PROCESS))
-        mockSh(null)
-        assertEquals([], registryRegulations.getChangedRegulations(RegulationType.BUSINESS_PROCESS))
-    }
-
     private void mockSh(String result) {
         helper.registerAllowedMethod("sh", [String.class], { cmd ->
             return result
@@ -66,11 +51,48 @@ class RegistryRegulationTests extends BasePipelineTest {
     }
 
     @Test
+    void getAllRegulationsTest() throws Exception {
+        helper.registerAllowedMethod('sh', [Map.class], { cmd ->
+            if (cmd.get("script").contains("find"))
+                return "file1\nfile2\nfile3"
+        })
+        assertEquals(registryRegulations.getAllRegulations(RegulationType.ROLES), ["file1", "file2", "file3"])
+    }
+
+    @Test
     void getRegistryConfValuesTest() throws Exception {
         helper.registerAllowedMethod('sh', [Map.class], { cmd ->
             if (cmd.get("script").contains("deployProfile"))
                 return "development"
         })
         assertEquals(registryRegulations.getRegistryConfValues(true), "development")
+        String path = context.initWorkDir()
+        assertTrue(registryRegulations.getRegistryConfValues(false).contains("platform-values.yaml"))
+    }
+
+    @Test
+    void getChangedStatusOrFilesTest() throws Exception {
+        helper.registerAllowedMethod('sh', [Map.class], { cmd ->
+            if (cmd.get("script").contains("java -jar"))
+                return "PlanCommandExecutionStart role_1,role_2 PlanCommandExecutionEnd"
+        })
+        assertEquals(registryRegulations.getChangedStatusOrFiles("plan", "create-keycloak-roles", "--file-detailed roles"), ["role_1", "role_2"])
+        context.script.env["FULL_DEPLOY"] = true
+        assertEquals(registryRegulations.getChangedStatusOrFiles("plan", "redash-roles", "--file"), ["fullDeploy"])
+    }
+
+    @Test
+    void deployStatusTest() throws Exception {
+        helper.registerAllowedMethod('sh', [Map.class], { cmd ->
+            if (cmd.get("script").contains("plan"))
+                return "PlanCommandExecutionStart true PlanCommandExecutionEnd"
+        })
+        String path = context.initWorkDir()
+        assertEquals(registryRegulations.deployStatus("create-keycloak-roles", "roles"), true)
+        helper.registerAllowedMethod('sh', [Map.class], { cmd ->
+            if (cmd.get("script").contains("plan"))
+                return "PlanCommandExecutionStart false PlanCommandExecutionEnd"
+        })
+        assertEquals(registryRegulations.deployStatus("create-keycloak-roles", "roles"), false)
     }
 }

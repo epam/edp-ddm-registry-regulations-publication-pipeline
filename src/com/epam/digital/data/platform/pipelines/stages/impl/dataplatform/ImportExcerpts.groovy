@@ -29,34 +29,45 @@ class ImportExcerpts {
     private final String EXCERPTS_DB_NAME = "excerpt"
 
     void run() {
-        if (context.registryRegulations.filesToDeploy.get(RegulationType.EXCERPTS)) {
-            CephBucket excerptBucket = new CephBucket("excerpt-templates", context)
-            excerptBucket.init()
-            try {
-                context.logger.info("Importing excerpts")
-                context.script.sh(script: "set +x; java -jar " +
-                        "-DREDASH_URL=${context.redash.viewerUrl} " +
-                        "-DREDASH_API_KEY=${context.redash.viewerApiKey} " +
-                        "-DPOSTGRES_PASSWORD=${context.postgres.excerptExporterPass} " +
-                        "-DPOSTGRES_USER=${context.postgres.excerptExporterUser} " +
-                        "-DDB_NAME=${EXCERPTS_DB_NAME} " +
-                        "-DDB_URL=${context.postgres.OPERATIONAL_MASTER_URL} " +
-                        "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
-                        "-DPWD_ADMIN=${context.postgres.analyticsAdminRolePass} " +
-                        "-DPWD_AUDITOR=${context.postgres.auditRolePass} " +
-                        "-DCEPH_BUCKET=${excerptBucket.cephBucketName} " +
-                        "-DCEPH_HTTP_ENDPOINT=${excerptBucket.cephHttpEndpoint} " +
-                        "-DCEPH_ACCESS_KEY=${excerptBucket.cephAccessKey} " +
-                        "-DCEPH_SECRET_KEY=${excerptBucket.cephSecretKey} " +
-                        "${EXCERPTS_IMPORTER_JAR} " +
-                        "--excerpts --excerpts-docx --excerpts-csv " +
-                        "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
-                context.logger.info("Excerpts have been successfully imported")
-            } catch (any) {
-                context.script.error("Excerpts import have been failed")
+        ["${RegulationType.EXCERPTS.value}", "${RegulationType.EXCERPTS.value}-docx", "${RegulationType.EXCERPTS.value}-csv"].each {
+            if (context.registryRegulations.deployStatus("import-$it",
+                    "${it}")) {
+                CephBucket excerptBucket = new CephBucket("excerpt-templates", context)
+                excerptBucket.init()
+                importExcerpts(it, "${excerptBucket.cephBucketName}", "${excerptBucket.cephHttpEndpoint}",
+                        "${excerptBucket.cephAccessKey}", "${excerptBucket.cephSecretKey}")
+                context.registryRegulations.getChangedStatusOrFiles("save", "import-$it",
+                        "--file ${context.getWorkDir()}/$it")
+            } else {
+                context.logger.info("Skip ${it} import due to no changes")
             }
-        } else {
-            context.logger.info("Skip ${RegulationType.EXCERPTS.value} import due to no changes")
+        }
+    }
+
+    private void importExcerpts(String dirName, String cephBucketName, String cephHttpEndpoint, String cephAccessKey, String cephSecretKey) {
+        context.logger.info("Importing excerpts for ${dirName}")
+        try {
+            context.script.sh(script: "set +x; java -jar " +
+                    "-DREDASH_URL=${context.redash.viewerUrl} " +
+                    "-DREDASH_API_KEY=${context.redash.viewerApiKey} " +
+                    "-DPOSTGRES_PASSWORD=${context.postgres.excerptExporterPass} " +
+                    "-DPOSTGRES_USER=${context.postgres.excerptExporterUser} " +
+                    "-DDB_NAME=${EXCERPTS_DB_NAME} " +
+                    "-DDB_URL=${context.postgres.OPERATIONAL_MASTER_URL} " +
+                    "-DDB_PORT=${context.postgres.OPERATIONAL_MASTER_PORT} " +
+                    "-DPWD_ADMIN=${context.postgres.analyticsAdminRolePass} " +
+                    "-DPWD_AUDITOR=${context.postgres.auditRolePass} " +
+                    "-DCEPH_BUCKET=${cephBucketName} " +
+                    "-DCEPH_HTTP_ENDPOINT=${cephHttpEndpoint} " +
+                    "-DCEPH_ACCESS_KEY=${cephAccessKey} " +
+                    "-DCEPH_SECRET_KEY=${cephSecretKey} " +
+                    "${EXCERPTS_IMPORTER_JAR} " +
+                    "--${dirName} " +
+                    "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
+            context.logger.info("Excerpts have been successfully imported for ${dirName}")
+
+        } catch (any) {
+            context.script.error("Excerpts import have been failed for ${dirName}")
         }
     }
 }

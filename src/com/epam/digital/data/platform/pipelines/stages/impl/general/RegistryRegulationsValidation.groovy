@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 EPAM Systems.
+ * Copyright 2023 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@ import com.epam.digital.data.platform.pipelines.stages.Stage
 class RegistryRegulationsValidation {
     BuildContext context
 
-    private final String LOWCODE_VALIDATOR_JAR = "/home/jenkins/registry-regulations-validator-cli/registry-regulations-validator-cli.jar"
+    private final String LOWCODE_VALIDATOR_JAR = "/home/jenkins/registry-regulations-cli/registry-regulations-cli.jar"
 
     void run() {
         context.logger.info("Registry regulations files validation")
         String validatorParams = "" +
+                "validate " +
                 "--bp-auth-files=${context.registryRegulations.getAllRegulations(RegulationType.BUSINESS_PROCESS_AUTH).join(",")} " +
                 "--bp-trembita-files=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.EXTERNAL_SYSTEM.getValue()} " +
                 "--bp-trembita-config=${RegulationType.BUSINESS_PROCESS_TREMBITA.getValue()}/${BpTrembitaFileType.CONFIG.getValue()} " +
@@ -46,19 +47,22 @@ class RegistryRegulationsValidation {
                 "--diia-notification-template-folder=notifications/diia " +
                 "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv " +
                 "--bp-grouping-files=bp-grouping/bp-grouping.yml " +
-                "--mock-integration-files=${context.registryRegulations.getAllRegulations(RegulationType.MOCK_INTEGRATIONS).join(",")} "
+                "--mock-integration-files=${context.registryRegulations.getAllRegulations(RegulationType.MOCK_INTEGRATIONS).join(",")} " +
+                "--reports-files=${context.registryRegulations.getAllRegulations(RegulationType.REPORTS).join(",")} "
 
         if (context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE_PATH)) {
             validatorParams += "--registry-settings-files=${context.registry.REGISTRY_SETTINGS_FILE_PATH} "
         }
 
         try {
-            context.script.sh(script: "java -jar ${LOWCODE_VALIDATOR_JAR} ${validatorParams} " +
+            context.script.sh(script: "java -jar -DOPENSHIFT_NAMESPACE=${context.namespace} ${LOWCODE_VALIDATOR_JAR} ${validatorParams} " +
                     "${context.logLevel == "DEBUG" ? "1>&2" : ""}")
         }
         catch (any) {
-            context.script.error("Registry regulations files did not pass validation")
+            context.script.unstable("[JENKINS][WARNING] Registry regulations files did not pass validation")
+            context.script.currentBuild.setResult('UNSTABLE')
         }
         context.logger.info("Registry regulations files have been successfully validated")
     }
 }
+

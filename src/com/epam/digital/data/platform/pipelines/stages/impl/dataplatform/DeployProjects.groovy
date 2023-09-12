@@ -51,7 +51,10 @@ class DeployProjects {
                             'version'            : dataComponent.version,
                             'keycloak.url'       : context.keycloak.url + "/auth",
                             'deployProfile'      : context.registryRegulations.getRegistryConfValues(true),
-                            'nexusPullSecret'    : context.dockerRegistry.PUSH_SECRET
+                            'nexusPullSecret'    : context.dockerRegistry.PUSH_SECRET,
+                            'pipelineStageName'  : context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
+                                    ".data.cdPipelineName") + '-' + context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
+                                    ".data.cdPipelineStageName")
                     ]
                     LinkedHashMap platformValuesPath = context.script.readYaml file: "${context.getWorkDir()}" +
                             "/platform-values.yaml"
