@@ -1,4 +1,4 @@
-apiVersion: v2.edp.epam.com/v1
+apiVersion: v2.edp.epam.com/v1alpha1
 kind: Codebase
 metadata:
   name: ${codebaseName}
@@ -9,8 +9,7 @@ spec:
   jenkinsSlave: ${jenkinsAgent}
   defaultBranch: ${defaultBranch}
   buildTool: ${buildTool}
-  gitUrlPath: /${codebaseName}
-  ciTool: jenkins
+  ciTool: Jenkins
   versioning:
     startFrom: ${version}
     type: edp
