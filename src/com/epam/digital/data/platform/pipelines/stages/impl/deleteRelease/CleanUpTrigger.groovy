@@ -20,6 +20,7 @@ import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 import com.epam.digital.data.platform.pipelines.codebase.Codebase
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
+import com.epam.digital.data.platform.pipelines.tools.Helm
 
 @Stage(name = "cleanup-trigger", buildTool = ["any"], type = [ProjectType.APPLICATION, ProjectType.LIBRARY])
 class CleanUpTrigger {
@@ -47,19 +48,6 @@ class CleanUpTrigger {
             }
         }
 
-        // Remove multiple-version of data-services
-        parallelDeletion["removeDataServices"] = {
-            context.logger.info("Removing Data Services codebasebranches")
-            try {
-                context.script.timeout(unit: 'MINUTES', time: cleanUpTimeout) {
-                    context.platform.deleteObject(Codebase.CODEBASEBRANCH_CR, "-l type=data-component")
-                    context.platform.deleteObject(Codebase.CODEBASE_CR, "-l type=data-component")
-                }
-            } catch (any) {
-                context.script.error("Cannot gracefully remove data services codebase and codebasebranch CRs")
-            }
-        }
-
         parallelDeletion["removeHistoryExcerptor"] = {
             context.logger.info("Removing ${context.codebase.historyName} codebasebranch and codebase CRs")
             try {
@@ -79,6 +67,10 @@ class CleanUpTrigger {
              "compact-blobstore-edp-maven":true].each { taskName, waitTask ->
                 context.cleanup.triggerManualNexusTask(taskName, waitTask)
             }
+        }
+
+        parallelDeletion["removeBpWebserviceGatewayRelease"] = {
+            Helm.uninstall(context, "bp-webservice-gateway", context.namespace, true)
         }
         context.script.parallel(parallelDeletion)
 

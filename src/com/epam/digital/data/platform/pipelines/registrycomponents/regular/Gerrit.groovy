@@ -23,8 +23,7 @@ class Gerrit extends GitServer {
         super(context, name)
     }
 
-    public final static String GERRIT_PROJECT_API_GROUP = "v2.edp.epam.com"
-    public final static String GERRIT_PROJECT_CR = "gerritproject.${GERRIT_PROJECT_API_GROUP}"
+    public final static String GERRIT_PROJECT_CR = "gerritproject"
 
     @Override
     boolean isRepositoryExists(String repoName) {

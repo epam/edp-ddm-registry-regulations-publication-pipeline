@@ -30,7 +30,8 @@ enum RegulationType {
     NOTIFICATION_TEMPLATES("notifications"),
     REGISTRY_SETTINGS("settings"),
     BP_GROUPING("bp-grouping"),
-    MOCK_INTEGRATIONS("mock-integrations")
+    MOCK_INTEGRATIONS("mock-integrations"),
+    ASSETS("assets")
 
     private String value
 

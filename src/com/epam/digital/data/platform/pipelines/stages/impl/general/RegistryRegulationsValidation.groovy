@@ -48,7 +48,8 @@ class RegistryRegulationsValidation {
                 "--excerpt-folders=excerpts,excerpts-docx,excerpts-csv " +
                 "--bp-grouping-files=bp-grouping/bp-grouping.yml " +
                 "--mock-integration-files=${context.registryRegulations.getAllRegulations(RegulationType.MOCK_INTEGRATIONS).join(",")} " +
-                "--reports-files=${context.registryRegulations.getAllRegulations(RegulationType.REPORTS).join(",")} "
+                "--reports-files=${context.registryRegulations.getAllRegulations(RegulationType.REPORTS).join(",")} " +
+                "--assets-folder=assets "
 
         if (context.script.fileExists(context.registry.REGISTRY_SETTINGS_FILE_PATH)) {
             validatorParams += "--registry-settings-files=${context.registry.REGISTRY_SETTINGS_FILE_PATH} "

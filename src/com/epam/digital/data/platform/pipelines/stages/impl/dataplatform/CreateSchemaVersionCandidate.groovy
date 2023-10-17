@@ -49,11 +49,11 @@ class CreateSchemaVersionCandidate {
             ArrayList versionCandidateCounter = context.script.sh(script: "ssh -oStrictHostKeyChecking=no -p ${context.gitServer.sshPort} " +
                     "${context.gitServer.autouser}@${context.gitServer.host} gerrit query --format=JSON status:open project:registry-regulations " +
                     "| sed -e 's/[{}]/''/g' | sed s/\\\"//g | awk -v RS=',' -F: '\$1==\"number\"{print \$2}'", returnStdout: true).tokenize('\n')
-if (versionCandidateCounter.isEmpty()) {
-versionCandidateCounter.add(context.script.env.GERRIT_CHANGE_NUMBER)
-}
-def versionCandidateCounterInt = versionCandidateCounter.collect { it.toInteger() }
-versionCandidateCounterInt.sort()
+        if (versionCandidateCounter.isEmpty()) {
+            versionCandidateCounter.add(context.script.env.GERRIT_CHANGE_NUMBER)
+        }
+        def versionCandidateCounterInt = versionCandidateCounter.collect { it.toInteger() }
+            versionCandidateCounterInt.sort()
             int maxCandidateVersions = context.platform.getJsonPathValue("configmap", "registry-pipeline-stage-name",
                     ".data.maxCandidateVersions").toInteger()
             if (versionCandidateCounterInt.size().toInteger() <= maxCandidateVersions || versionCandidateCounterInt.subList(0,maxCandidateVersions).contains(context.script.env.GERRIT_CHANGE_NUMBER.toInteger())) {
@@ -88,12 +88,16 @@ versionCandidateCounterInt.sort()
 
                         context.logger.info("Applying Liquibase from master")
                         runUpdateLiquibase(operationalMasterRegistryDBUrl, registryVersionFromMaster, dataLoadPath, symlinkPath)
+                        context.logger.info("Liquibase from master was applied")
                     }
                     catch (any) {
                         context.logger.warn("Something went wrong when applying Liquibase from master")
                     }
 
                     if (doesVersionCandidateHasChangesInDataLoad) {
+                        context.script.sshagent(["${context.gitServer.credentialsId}"]) {
+                            context.script.sh(script: "git checkout FETCH_HEAD")
+                        }
                         // remove data from previous using and copy data-load files from version candidate
                         context.logger.info("Remove data-load from previous using")
                         try {
@@ -107,6 +111,7 @@ versionCandidateCounterInt.sort()
 
                         context.logger.info("Applying Liquibase from ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate")
                         runUpdateLiquibase(operationalMasterRegistryDBUrl, registryVersionFromVersionCandidate, dataLoadPath, symlinkPath)
+                        context.logger.info("Applying Liquibase from ${context.script.env.GERRIT_CHANGE_NUMBER} version candidate finished")
                     } else {
                         context.logger.info("Skip applying Liquibase from version candidate.")
                     }

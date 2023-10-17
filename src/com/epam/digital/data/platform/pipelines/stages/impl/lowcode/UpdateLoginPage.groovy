@@ -21,30 +21,40 @@ import com.epam.digital.data.platform.pipelines.registry.RegulationType
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 import com.epam.digital.data.platform.pipelines.stages.Stage
 
-@Stage(name = "update-theme-login-page", buildTool = ["any"], type = ProjectType.LIBRARY)
-class UpdateThemeLoginPage {
+@Stage(name = "update-login-page", buildTool = ["any"], type = ProjectType.LIBRARY)
+class UpdateLoginPage {
     BuildContext context
 
     void run() {
-        if (context.registryRegulations.deployStatus("update-theme-login-page",
+        if (context.registryRegulations.deployStatus("update-login-page",
                 "${RegulationType.GLOBAL_VARS.value}")) {
             try {
                 String GLOBAL_VARS_FILE = "${RegulationType.GLOBAL_VARS.value}/camunda-global-system-vars.yml"
-                String themeFile = context.script.readYaml(file: GLOBAL_VARS_FILE)["themeFile"]
-                if (themeFile) {
+                def yaml = context.script.readYaml(file: GLOBAL_VARS_FILE)
+                String themeFile = yaml["themeFile"]
+                String supportChannelUrl = yaml["supportChannelUrl"].replaceAll("&", "\\\\&")
+                if (themeFile || supportChannelUrl) {
                     String idGovUaOfficerAuthFlow = "id-gov-ua-officer"
-                    String authFlowYaml
+                    LinkedHashMap authFlowYaml
                     ["officer", "citizen", idGovUaOfficerAuthFlow].each {
                         if (it == idGovUaOfficerAuthFlow && context.platform.checkObjectExists("keycloakauthflow", idGovUaOfficerAuthFlow)) {
-                            authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", idGovUaOfficerAuthFlow, "-o yaml --ignore-not-found=true")
+                            authFlowYaml = context.script.readYaml(text: context.platform.get("keycloakauthflows", idGovUaOfficerAuthFlow, "-o yaml --ignore-not-found=true"))
                         }
                         if (it == "officer" || it == "citizen") {
-                            authFlowYaml = context.platform.get("keycloakauthflows.v1.edp.epam.com", "${it}-portal-dso-${it}-auth-flow", "-o yaml --ignore-not-found=true")
+                            authFlowYaml = context.script.readYaml(text: context.platform.get("keycloakauthflows", "${it}-portal-dso-${it}-auth-flow", "-o yaml --ignore-not-found=true"))
                         }
                         try {
+                            LinkedHashMap updatedAuthFlowYaml = context.platform.removeYamlMetadata(authFlowYaml)
                             String tmpFile = "tmp-${it}.yml"
-                            context.script.writeFile(file: tmpFile, text: authFlowYaml)
-                            context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
+                            context.script.writeYaml(file: tmpFile, data: updatedAuthFlowYaml)
+                            if(themeFile) {
+                                context.script.sh("""sed -i 's/themeFile:.*/themeFile: ${themeFile}/' ${tmpFile}""")
+                            }
+                            if(supportChannelUrl) {
+                                context.script.sh("""sed -i 's|supportChannelUrl:.*|supportChannelUrl: ${supportChannelUrl}|' ${tmpFile}""")
+                            } else {
+                                context.script.sh("""sed -i 's|supportChannelUrl:.*|supportChannelUrl: ""|' ${tmpFile}""")
+                            }
                             context.platform.apply(tmpFile)
                             context.script.sh("rm -f ${tmpFile}")
                         } catch (any) {
@@ -58,10 +68,10 @@ class UpdateThemeLoginPage {
             catch (any) {
                 context.logger.error("Failed to update theme file")
             }
-            context.registryRegulations.getChangedStatusOrFiles("save", "update-theme-login-page",
+            context.registryRegulations.getChangedStatusOrFiles("save", "update-login-page",
                     "--file ${context.getWorkDir()}/${RegulationType.GLOBAL_VARS.value}")
         } else {
-            context.logger.info("Skip update-theme-login-page due to no changes")
+            context.logger.info("Skip update-login-page due to no changes")
         }
     }
 }

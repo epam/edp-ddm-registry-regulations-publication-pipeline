@@ -22,9 +22,8 @@ import com.epam.digital.data.platform.pipelines.buildtool.IBuildTool
 import com.epam.digital.data.platform.pipelines.stages.ProjectType
 
 class Codebase {
-    public final static String CODEBASE_API_GROUP = "v2.edp.epam.com"
-    public final static String CODEBASE_CR = "codebase.${CODEBASE_API_GROUP}"
-    public final static String CODEBASEBRANCH_CR = "codebasebranch.${CODEBASE_API_GROUP}"
+    public final static String CODEBASE_CR = "codebase"
+    public final static String CODEBASEBRANCH_CR = "codebasebranch"
 
     private final BuildContext context
 

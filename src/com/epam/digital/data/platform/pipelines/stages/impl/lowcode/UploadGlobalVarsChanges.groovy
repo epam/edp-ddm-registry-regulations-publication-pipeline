@@ -35,7 +35,7 @@ class UploadGlobalVarsChanges {
                     String CAMUNDA_GLOBAL_VARS_FILE = "camunda-global-system-vars.yml"
                     String camundaGlobalVarsYaml = "camunda:\\n  system-variables:\\n" +
                             "${context.script.sh(script: """x=4; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s_%s\\n", "", "const", \$0}' \
-                        ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true).replaceAll("\n", "\\\\n")}"
+                        ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true).replaceAll("\n", "\\\\n").replaceAll("&", "\\\\&")}"
                     context.bpmsConfigMapsChanged["globalVars"] = context.platform.patchConfigMapKey(BusinessProcMgmtSys.GLOBAL_VARS_CONFIG_MAP,
                             CAMUNDA_GLOBAL_VARS_FILE, camundaGlobalVarsYaml)
                     context.logger.info("Camunda global have been successfully updated")
@@ -43,14 +43,13 @@ class UploadGlobalVarsChanges {
                     context.logger.info("Updating registry env variables for portals")
                     String asJson = context.script.sh(script: """x=2; awk '{gsub(/^[ \\t\\r\\n]+\$/, "", \$0); if ( \$0 ) printf "%"'\$x'"s%s%s\\n", "", \$0, ","}' \
                         ${CAMUNDA_GLOBAL_VARS_FILE}""", returnStdout: true)
+                            .replaceAll("&", "\\\\&")
                             .replaceAll("\n", "\\\\n")
                             .replaceAll(': ', ': \'')
                             .replaceAll(',', '\',')
                     String jsRegistryEnvVarsJson = "const REGISTRY_ENVIRONMENT_VARIABLES = {\\n  ${asJson}};"
-                    if (context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
-                            jsRegistryEnvVarsJson)) {
-                        context.platform.triggerDeploymentRollout("citizen-portal,officer-portal")
-                    }
+                    context.platform.patchConfigMapKey("registry-environment-js", "registry-environment.js",
+                            jsRegistryEnvVarsJson)
                     context.logger.info("Registry env variables have been successfully updated")
 
                 } catch (any) {

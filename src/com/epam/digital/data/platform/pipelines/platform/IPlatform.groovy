@@ -52,4 +52,6 @@ interface IPlatform {
     void addSccToUser(String user, String scc, String project)
 
     void waitFor(String resource, String condition, String timeout)
+
+    LinkedHashMap removeYamlMetadata(LinkedHashMap resource)
 }

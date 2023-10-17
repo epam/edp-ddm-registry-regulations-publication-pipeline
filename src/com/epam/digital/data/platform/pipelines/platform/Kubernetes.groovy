@@ -156,4 +156,15 @@ class Kubernetes implements IPlatform {
     String getAll(String resource, String parameters = "") {
         context.script.sh(script: "${CLI} get ${resource} ${parameters}", returnStdout: true)
     }
+
+    @Override
+    LinkedHashMap removeYamlMetadata(LinkedHashMap dataYaml) {
+        context.logger.info("Removing metadata from yaml data")
+        ArrayList<String> metadataKeys = ['creationTimestamp', 'resourceVersion', 'uid', 'managedFields', 'selfLink', 'ownerReferences']
+        metadataKeys.each { it ->
+            dataYaml.metadata.remove(it)
+        }
+        return dataYaml as LinkedHashMap
+    }
+
 }

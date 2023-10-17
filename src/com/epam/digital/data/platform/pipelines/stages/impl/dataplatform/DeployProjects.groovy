@@ -58,9 +58,9 @@ class DeployProjects {
                     ]
                     LinkedHashMap platformValuesPath = context.script.readYaml file: "${context.getWorkDir()}" +
                             "/platform-values.yaml"
-                    Boolean disableRequestsLimits = platformValuesPath["global"]["disableRequestsLimits"]
-                    if (disableRequestsLimits != null) {
-                        parametersMap.put("global.disableRequestsLimits", disableRequestsLimits)
+                    Boolean requestsLimitsEnabled = platformValuesPath["global"]["container"]["requestsLimitsEnabled"]
+                    if (requestsLimitsEnabled != null) {
+                        parametersMap.put("global.container.requestsLimitsEnabled", requestsLimitsEnabled)
                     }
 
                     String deploymentMode = platformValuesPath["global"]["deploymentMode"]
@@ -77,6 +77,13 @@ class DeployProjects {
                         parametersMap.put("global.clusterVersion", clusterVersion)
                     }
 
+                    if (dataComponent.name == DataComponentType.REST_API.getValue()) {
+                        String kafkaRequestReplyTimeout = platformValuesPath["global"]["registry"]["restApi"]["kafka"]?.timeoutInSeconds
+                        if (kafkaRequestReplyTimeout != null) {
+                            parametersMap.put("global.registry.restApi.kafka.timeoutInSeconds", kafkaRequestReplyTimeout)
+                        }
+                    }
+
                     if (dataComponent.name == DataComponentType.SOAP_API.getValue()) {
                         context.logger.info("Add trembita IPs to SOAP api")
                         LinkedHashMap registryValues = context.script.readYaml text: context.script.sh(script: """helm get values registry-nodes -a -n ${context.namespace}""", returnStdout: true)
@@ -87,17 +94,24 @@ class DeployProjects {
 
                     String fileParameters = ""
                     String dataComponentNameNormalized = dataComponent.name.replace('-','').replace('api',"Api")
-                    if (platformValuesPath.global.registry?."${dataComponentNameNormalized}") {
-                        LinkedHashMap registryProperties = [global: [registry: ["${dataComponentNameNormalized}":
-                                                platformValuesPath.global.registry?."${dataComponentNameNormalized}"]]]
-                        String componentValuesFile = "${dataComponent.getWorkDir()}/${dataComponentNameNormalized}.yaml"
-                        context.script.writeYaml file: componentValuesFile, data: registryProperties, overwrite: true
-                        fileParameters = "-f ${componentValuesFile}"
-                    }
+                    LinkedHashMap globalRegistryProperties = [global: platformValuesPath.global]
+                    String componentGlobalValuesFile = "${dataComponent.getWorkDir()}/${dataComponentNameNormalized}Global.yaml"
+                    context.script.writeYaml file: componentGlobalValuesFile, data: globalRegistryProperties, overwrite: true
+                    fileParameters = "-f ${componentGlobalValuesFile}"
+
                     context.script.dir(dataComponent.getWorkDir()) {
                         Helm.upgrade(context, dataComponent.fullName, dataComponent.DEPLOY_TEMPLATES_PATH, parametersMap,
                                 fileParameters, context.namespace)
-                    }
+
+                        context.script.sleep(10)
+                        try {
+                            context.logger.info("Wait up to 10min for ${dataComponent.name} become available.")
+                            context.script.sh("oc wait deployment/registry-${dataComponent.name}-deployment --for condition=available --timeout=10m")
+                            context.logger.info("${dataComponent.name} is available.")
+                        } catch (any) {
+                            context.logger.warn("${dataComponent.name} isn't available in time! Please check manually.")
+                        }
+                    } 
                 }
         }
         context.script.parallel parallelDeployment

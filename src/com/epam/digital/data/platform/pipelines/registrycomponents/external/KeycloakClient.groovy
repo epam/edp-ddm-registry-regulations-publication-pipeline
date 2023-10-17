@@ -32,11 +32,11 @@ class KeycloakClient {
     void init(String realm, String clientId, String clientSecret) {
         LinkedHashMap parallelGetValue = [:]
         parallelGetValue["realm"] = {
-            this.realm = context.platform.getJsonPathValue(Keycloak.KEYCLOAK_REALM_API, realm,
+            this.realm = context.platform.getJsonPathValue(Keycloak.KEYCLOAK_REALM_CR, realm,
                     ".spec.realmName")
         }
         parallelGetValue["clientId"] = {
-            this.clientId = context.platform.getJsonPathValue(Keycloak.KEYCLOAK_CLIENT_API, clientId,
+            this.clientId = context.platform.getJsonPathValue(Keycloak.KEYCLOAK_CLIENT_CR, clientId,
                     ".spec.clientId")
         }
         parallelGetValue["clientSecret"] = {

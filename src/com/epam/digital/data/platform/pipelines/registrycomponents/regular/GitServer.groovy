@@ -19,7 +19,7 @@ package com.epam.digital.data.platform.pipelines.registrycomponents.regular
 import com.epam.digital.data.platform.pipelines.buildcontext.BuildContext
 
 abstract class GitServer {
-    protected final String GIT_SERVER_CR_API_GROUP = "gitserver.v2.edp.epam.com"
+    protected final String GIT_SERVER_CR = "gitserver"
 
     protected BuildContext context
 
@@ -37,7 +37,7 @@ abstract class GitServer {
     }
 
     void init() {
-        this.gitserverJson = context.platform.getAsJson("gitserver.v2.edp.epam.com", name)["spec"]
+        this.gitserverJson = context.platform.getAsJson(GIT_SERVER_CR, name)["spec"]
         this.credentialsId = this.gitserverJson["nameSshKeySecret"]
         this.autouser = this.gitserverJson["gitUser"]
         this.host = this.gitserverJson["gitHost"]
@@ -45,7 +45,7 @@ abstract class GitServer {
     }
 
     protected void getGitserverSpecField(final String field) {
-        context.platform.getJsonPathValue(GIT_SERVER_CR_API_GROUP, name, ".spec.${field}")
+        context.platform.getJsonPathValue(GIT_SERVER_CR, name, ".spec.${field}")
     }
 
     abstract boolean isRepositoryExists(String repoName)

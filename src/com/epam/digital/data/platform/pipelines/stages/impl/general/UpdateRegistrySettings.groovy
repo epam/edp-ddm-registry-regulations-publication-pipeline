@@ -42,30 +42,11 @@ class UpdateRegistrySettings {
                         title = ''
                         titleFull = ''
                     }
-                    String idGovUaOfficerAuthFlow = "id-gov-ua-officer"
-                    LinkedHashMap authFlowYaml
-                    ["officer", "citizen", idGovUaOfficerAuthFlow].each {
-                        if (it == idGovUaOfficerAuthFlow && context.platform.checkObjectExists("keycloakauthflow", idGovUaOfficerAuthFlow)) {
-                            authFlowYaml = context.script.readYaml(text: context.platform
-                                    .get("keycloakauthflows.v1.edp.epam.com",
-                                            "$idGovUaOfficerAuthFlow", "-o yaml --ignore-not-found=true"))
-                        }
-                        if ((it == "officer" || it == "citizen") && context.platform.checkObjectExists("keycloakauthflow", "${it}-portal-dso-${it}-auth-flow")) {
-                            authFlowYaml = context.script.readYaml(text: context.platform
-                                    .get("keycloakauthflows.v1.edp.epam.com",
-                                            "${it}-portal-dso-${it}-auth-flow", "-o yaml --ignore-not-found=true"))
-                        }
-                        try {
-                            authFlowYaml.spec.authenticationExecutions[1].authenticatorConfig.config.title = title
-                            authFlowYaml.spec.authenticationExecutions[1].authenticatorConfig.config.titleFull = titleFull
-                            String tmpFile = "tmp-${it}.yml"
-                            context.script.writeYaml(file: tmpFile, data: authFlowYaml)
-                            context.platform.apply(tmpFile)
-                            context.script.sh("rm -f ${tmpFile}")
-                        } catch (any) {
-                            context.logger.info("Failed to apply tmp-${it}.yml")
-                        }
-                    }
+                    Map authenticatorConfigProperties = [
+                            "title": title,
+                            "titleFull": titleFull
+                    ]
+                    context.keycloak.updateAuthenticatorConfigProperties(authenticatorConfigProperties)
 
                     String asJson = context.script.writeJSON returnText: true, json: registrySettings
                     String registrySettingsJson = "const REGISTRY_SETTINGS = ${asJson.replaceAll('"', '\'')};"
@@ -75,7 +56,7 @@ class UpdateRegistrySettings {
                     }
                 }
                 catch (Exception e) {
-                    context.logger.error("Failed to update registry settings:\n ${e}")
+                    context.script.error("Failed to update registry settings:\n ${e}")
                 }
             }
             context.registryRegulations.getChangedStatusOrFiles("save", "update-registry-settings",

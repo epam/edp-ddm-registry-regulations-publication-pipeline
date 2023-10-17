@@ -30,8 +30,10 @@ class DeleteRegistry {
     private String CLEANUP_PROCESS_HISTORY_SQL = "CleanupProcessHistory.sql"
     private String CLEANUP_REDASH_USERS_SQL = "CleanupRedashUsers.sql"
     private String CLEANUP_CAMUNDA_SQL = "CleanupCamunda.sql"
-    private String REDASH_POD_NAME = "redash-viewer-postgresql-0"
+    private String CLEANUP_NOTIFICATIONS_SQL = "CleanupNotifications.sql"
     private String REDASH_VIEWER_SECRET = "redash-viewer-secret"
+    private String REDASH_VIEWER_DB_NAME = "redash_viewer"
+    private String REDASH_VIEWER_DB_USER = "redash_viewer_role"
 
     void run() {
         LinkedHashMap parallelDeletion = [:]
@@ -50,6 +52,8 @@ class DeleteRegistry {
             context.script.writeFile(file: "sql/${CLEANUP_PROCESS_HISTORY_SQL}", text: cleanupProcessHistorySqlResource)
             String cleanupCamundaSqlResource = context.script.libraryResource("sql/${CLEANUP_CAMUNDA_SQL}")
             context.script.writeFile(file: "sql/${CLEANUP_CAMUNDA_SQL}", text: cleanupCamundaSqlResource)
+            String cleanupNotificationsSqlResource = context.script.libraryResource("sql/${CLEANUP_NOTIFICATIONS_SQL}")
+            context.script.writeFile(file: "sql/${CLEANUP_NOTIFICATIONS_SQL}", text: cleanupNotificationsSqlResource)
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterRepPod}:/tmp/")
             context.script.sh(script: "oc rsync --no-perms=true sql/ ${context.postgres.masterPod}:/tmp/")
 
@@ -92,6 +96,9 @@ class DeleteRegistry {
             context.logger.info("Cleaning camunda DB on operational cluster")
             context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_CAMUNDA_SQL}", context.postgres.operational_pg_user)
 
+            context.logger.info("Cleaning notifications DB on operational cluster")
+            context.postgres.psqlScript(context.postgres.masterPod, "/tmp/${CLEANUP_NOTIFICATIONS_SQL}", context.postgres.operational_pg_user)
+
             context.platform.scale("deployment/${BusinessProcMgmtSys.BPMS_DEPLOYMENT_NAME}", 1)
             context.platform.scale("deployment/${BusinessProcMgmtSys.BP_ADMIN_PORTAL_DEPLOYMENT_NAME}", 1)
 
@@ -122,9 +129,9 @@ class DeleteRegistry {
             context.logger.info("Removing Redash resources")
             String cleanupRedashUsers = context.script.libraryResource("sql/${CLEANUP_REDASH_USERS_SQL}")
             context.script.writeFile(file: "sql_redash/${CLEANUP_REDASH_USERS_SQL}", text: cleanupRedashUsers)
-            context.script.sh(script: "oc rsync --no-perms=true sql_redash/ ${REDASH_POD_NAME}:/tmp/")
-            context.platform.podExec(REDASH_POD_NAME,
-                    "bash -c \'export PGPASSWORD=${context.platform.getSecretValue(REDASH_VIEWER_SECRET, "postgresqlPassword")}; psql redash -U redash -f tmp/${CLEANUP_REDASH_USERS_SQL}\'", "")
+            context.script.sh(script: "oc rsync --no-perms=true sql_redash/ ${context.postgres.masterRepPod}:/tmp/")
+            context.platform.podExec(context.postgres.masterRepPod,
+                    "bash -c \'export PGPASSWORD=${context.platform.getSecretValue(REDASH_VIEWER_SECRET, "postgresqlPassword")}; psql ${REDASH_VIEWER_DB_NAME} -U ${REDASH_VIEWER_DB_USER} -hlocalhost -f tmp/${CLEANUP_REDASH_USERS_SQL}\'", "")
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/dashboards",
                     context.redash.viewerApiKey)
             context.redash.deleteRedashResource("${context.redash.viewerUrl}/api/data_sources",

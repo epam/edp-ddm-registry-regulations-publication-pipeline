@@ -3,5 +3,5 @@ kind: KeycloakRealmRoleBatch
 metadata:
   name: ${realmName}
 spec:
-  realm: ${realmName}-portal
+  realm: ${realm}
   ${roles}

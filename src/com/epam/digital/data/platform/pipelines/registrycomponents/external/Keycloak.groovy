@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 EPAM Systems.
+ * Copyright 2023 EPAM Systems.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,9 @@ import groovy.json.JsonSlurperClassic
 class Keycloak {
     private final BuildContext context
 
-    public final static String KEYCLOAK_API = "keycloak.${KEYCLOAK_CR_API_VERSION}"
-    public final static String KEYCLOAK_REALM_API = "keycloakrealm.${KEYCLOAK_CR_API_VERSION}"
-    public final static String KEYCLOAK_CLIENT_API = "keycloakclient.${KEYCLOAK_CR_API_VERSION}"
-    public final static String KEYCLOAK_CR_API_VERSION = "v1.edp.epam.com"
+    public final static String KEYCLOAK_CR = "keycloak"
+    public final static String KEYCLOAK_REALM_CR = "keycloakrealm"
+    public final static String KEYCLOAK_CLIENT_CR = "keycloakclient"
 
     public String url
 
@@ -34,7 +33,7 @@ class Keycloak {
     }
 
     void init() {
-        url = context.platform.getJsonPathValue(KEYCLOAK_API, "main", ".spec.url")
+        url = context.platform.getJsonPathValue(KEYCLOAK_CR, "main", ".spec.url")
     }
 
     String getAccessToken(KeycloakClient kc) {
@@ -69,6 +68,30 @@ class Keycloak {
             return token
         } else {
             context.script.error("Token have not been received")
+        }
+    }
+
+    void updateAuthenticatorConfigProperties(Map authenticatorConfigProperties) {
+        String idGovUaOfficerAuthFlow = "id-gov-ua-officer"
+        LinkedHashMap authFlowYaml
+        ["officer", "citizen", idGovUaOfficerAuthFlow].each {
+            if (it == idGovUaOfficerAuthFlow && context.platform.checkObjectExists("keycloakauthflow", idGovUaOfficerAuthFlow)) {
+                authFlowYaml = context.script.readYaml(text: context.platform
+                        .get("keycloakauthflows",
+                                "$idGovUaOfficerAuthFlow", "-o yaml --ignore-not-found=true"))
+            }
+            if ((it == "officer" || it == "citizen") && context.platform.checkObjectExists("keycloakauthflow", "${it}-portal-dso-${it}-auth-flow")) {
+                authFlowYaml = context.script.readYaml(text: context.platform
+                        .get("keycloakauthflows",
+                                "${it}-portal-dso-${it}-auth-flow", "-o yaml --ignore-not-found=true"))
+            }
+            authFlowYaml.spec.authenticationExecutions[1].authenticatorConfig.config.putAll(authenticatorConfigProperties)
+
+            LinkedHashMap updatedAuthFlowYaml = context.platform.removeYamlMetadata(authFlowYaml)
+            String tmpFile = "tmp-${it}.yml"
+            context.script.writeYaml(file: tmpFile, data: updatedAuthFlowYaml)
+            context.platform.apply(tmpFile)
+            context.script.sh("rm -f ${tmpFile}")
         }
     }
 
